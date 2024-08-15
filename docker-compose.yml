@@ -7,10 +7,11 @@ services:
       - "80:80"
     volumes:
       - ./nginx/:/etc/nginx/
+      - ./templates:/usr/share/nginx/html/
     depends_on:
       - node
   node:
-    build: .
+    build: node/.
     user: "node"
     working_dir: /home/node/app
     environment:
