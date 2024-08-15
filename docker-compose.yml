@@ -1,0 +1,25 @@
+
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/:/etc/nginx/
+    depends_on:
+      - node
+  node:
+    build: .
+    user: "node"
+    working_dir: /home/node/app
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./node:/home/node/app
+      - ./node/node_modules:/home/node/app/node_modules
+    expose:
+      - "8888"
+    ports: # use if it is necessary to expose the container to the host machine
+      - "8001:8001"
+    
