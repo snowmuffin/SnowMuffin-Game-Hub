@@ -1,16 +1,19 @@
+require('dotenv').config(); // 환경 변수를 로드
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
 const SteamStrategy = require('passport-steam').Strategy;
+const mysql = require('mysql2');
 
+// Express 앱 생성
 const app = express();
 
-// Steam API Key
-const STEAM_API_KEY = process.env.STEAM_API_KEY || '';
+// Steam API Key 설정
+const STEAM_API_KEY = process.env.STEAM_API_KEY || 'your_default_steam_api_key';
 
 // Session 설정
 app.use(session({
-  secret: 'my_super_secret_key_12345',
+  secret: process.env.SESSION_SECRET || 'my_super_secret_key_12345',  // 환경 변수로 비밀 키 설정
   resave: false,
   saveUninitialized: true
 }));
@@ -29,54 +32,87 @@ passport.deserializeUser((user, done) => {
 
 // Steam 로그인 전략 설정
 passport.use(new SteamStrategy({
-  returnURL: 'http://localhost:3000/api/auth/steam/return',  // 올바른 경로로 수정
-  realm: 'http://localhost:3000/',
+  returnURL: process.env.RETURN_URL || 'http://localhost:3000/api/auth/steam/return',  // 환경 변수 사용
+  realm: process.env.REALM || 'http://localhost:3000/',  // 환경 변수 사용
   apiKey: STEAM_API_KEY
 }, (identifier, profile, done) => {
   process.nextTick(() => {
     return done(null, profile);
   });
 }));
+
 // Steam 로그인 라우트
 app.get('/api/auth/steam', passport.authenticate('steam'));
 
-app.get('/api/auth/steam/return', passport.authenticate('steam', { failureRedirect: '/' }),
-  (req, res) => {
-    res.redirect('http://localhost/');
-  }
-);
+app.get('/api/auth/steam/return', passport.authenticate('steam', { failureRedirect: '/' }), (req, res) => {
+  res.redirect(process.env.REDIRECT_URL || 'http://localhost/'); // 로그인 후 리디렉션할 페이지를 환경 변수로 설정
+});
+
+// 로그인한 사용자 정보 반환
 app.get('/api/user', (req, res) => {
   if (req.isAuthenticated()) {
-    res.json({ user: req.user }); // 로그인된 사용자 정보 반환
+    res.json({ user: req.user });
   } else {
-    res.json({ user: null }); // 로그인이 되어 있지 않으면 null 반환
+    res.json({ user: null });
   }
 });
 
+// MySQL 연결 설정
+const connection = mysql.createConnection({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'my-secret-pw',
+  database: process.env.DB_NAME || 'mydatabase'
+});
+
+// MySQL 연결 확인
+connection.connect((err) => {
+  if (err) {
+    console.error('MySQL 연결 오류:', err);
+    return;
+  }
+  console.log('MySQL에 성공적으로 연결되었습니다.');
+});
+
+// 특정 사용자(Steam ID)의 피해 데이터를 반환하는 API
+app.get('/api/damage/:steamid', (req, res) => {
+  // Steam ID를 문자열로 처리
+  const steamId = req.params.steamid;
+
+  // Steam ID를 숫자가 아닌 문자열로 MySQL에 전달
+  const query = 'SELECT total_damage FROM damage_logs WHERE steam_id = ?';
+  connection.query(query, [steamId], (err, results) => {
+    if (err) {
+      console.error('Error fetching damage data:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length > 0) {
+      res.json({ steamid: steamId, totalDamage: results[0].total_damage });
+    } else {
+      res.json({ steamid: steamId, totalDamage: 0 }); // 데이터가 없을 경우 0 반환
+    }
+  });
+});
 // 홈 라우트
 app.get('/', (req, res) => {
   res.send(req.user ? `Logged in as ${req.user.displayName}` : 'Not logged in');
 });
 
-app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+// 서버 시작
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
 });
 
-const mysql = require('mysql2');
-
-// MySQL 연결 설정
-const connection = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
-});
-
-// 연결 확인
-connection.connect((err) => {
-  if (err) {
-    console.error('Error connecting to MySQL:', err);
-    return;
-  }
-  console.log('Connected to MySQL database!');
+// 서버 종료 시 MySQL 연결 해제
+process.on('SIGINT', () => {
+  connection.end(err => {
+    if (err) {
+      console.error('MySQL 연결 종료 오류:', err);
+    } else {
+      console.log('MySQL 연결이 성공적으로 종료되었습니다.');
+    }
+    process.exit();
+  });
 });

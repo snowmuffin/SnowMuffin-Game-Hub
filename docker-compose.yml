@@ -1,4 +1,5 @@
 
+
 services:
   nginx:
     image: nginx:alpine
@@ -17,9 +18,10 @@ services:
     environment:
       - NODE_ENV=production
       - DB_HOST=mysql
-      - DB_USER=root
-      - DB_PASSWORD=my-secret-pw
-      - DB_NAME=mydatabase
+      - DB_USER=${DB_USER}           # .env 파일에서 읽어옵니다.
+      - DB_PASSWORD=${DB_PASSWORD}   # .env 파일에서 읽어옵니다.
+      - DB_NAME=${DB_NAME}           # .env 파일에서 읽어옵니다.
+      - STEAM_API_KEY=${STEAM_API_KEY}
     volumes:
       - ./node:/home/node/app
       - ./node/node_modules:/home/node/app/node_modules
@@ -34,8 +36,10 @@ services:
     image: mysql:5.7
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: my-secret-pw
-      MYSQL_DATABASE: mydatabase
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}   # .env 파일에서 읽어옵니다.
+      MYSQL_DATABASE: ${DB_NAME}                    # .env 파일에서 읽어옵니다.
+      MYSQL_USER: ${DB_USER}                        # .env 파일에서 읽어옵니다.
+      MYSQL_PASSWORD: ${DB_PASSWORD}                # .env 파일에서 읽어옵니다.
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
