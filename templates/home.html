@@ -12,8 +12,7 @@
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-    <link
-        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
         rel="stylesheet">
 
     <!-- Custom styles for this template-->
@@ -32,36 +31,19 @@
             <!-- Sidebar - Brand -->
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="home.html">
                 <div class="sidebar-brand-icon rotate-n-15">
-                    <i class="fas fa-laugh-wink"></i>
+                    <img src="img\SEK_icon.png" alt="Brand Logo" style="width: 40px; height: 40px;">
                 </div>
-                <div class="sidebar-brand-text mx-3">Snowmuffin</div>
+                <div class="sidebar-brand-text mx-3">SEK_SERVER</div>
             </a>
 
-            <!-- Divider -->
-            <hr class="sidebar-divider my-0">
 
-            <!-- Nav Item - Dashboard -->
-            <li class="nav-item active">
-                <a class="nav-link" href="home.html">
-                    <i class="fas fa-fw fa-tachometer-alt"></i>
-                    <span>Dashboard</span></a>
-            </li>
 
-            <!-- Divider -->
-            <hr class="sidebar-divider">
 
-            <!-- Heading -->
-            <div class="sidebar-heading">
-                Interface
-            </div>
+
 
             <!-- Nav Item - Pages Collapse Menu -->
             <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo"
-                    aria-expanded="true" aria-controls="collapseTwo">
-                    <i class="fas fa-fw fa-cog"></i>
-                    <span>Components</span>
-                </a>
+
                 <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <h6 class="collapse-header">Custom Components:</h6>
@@ -71,27 +53,8 @@
                 </div>
             </li>
 
-            <!-- Divider -->
-            <hr class="sidebar-divider">
 
-            <!-- Heading -->
-            <div class="sidebar-heading">
-                Addons
-            </div>
 
-            <!-- Nav Item - Charts -->
-            <li class="nav-item">
-                <a class="nav-link" href="charts.html">
-                    <i class="fas fa-fw fa-chart-area"></i>
-                    <span>Charts</span></a>
-            </li>
-
-            <!-- Nav Item - Tables -->
-            <li class="nav-item">
-                <a class="nav-link" href="tables.html">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>Tables</span></a>
-            </li>
 
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
@@ -127,33 +90,13 @@
 
                         <!-- Nav Item - User Information -->
                         <li class="nav-item dropdown no-arrow">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
-                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <div id="user-info">
-                                    <span id="user-name">Guest</span>
-                                    <img id="user-avatar" src="img/default-avatar.png" alt="User Avatar" style="width: 50px; height: 50px;">
-                                </div>
-                            </a>
+                            <div id="user-info">
+                                <!-- 기본적으로 Guest 표시 -->
+                                <span id="user-name">Guest</span>
+                                <img id="user-avatar" src="https://cdn.cloudflare.steamstatic.com/store/home/store_home_share.jpg" alt="User Avatar" style="width: 50px; height: 50px;">
+                            </div>
                             <!-- Dropdown - User Information -->
-                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
-                                aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="#">
-                                    <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Profile
-                                </a>
-                                <a class="dropdown-item" href="#">
-                                    <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Settings
-                                </a>
-                                <a class="dropdown-item" href="#">
-                                    <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Activity Log
-                                </a>
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
-                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Logout
-                                </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
                             </div>
                         </li>
 
@@ -233,39 +176,59 @@
     <!-- Custom scripts for all pages-->
     <script src="js/sb-admin-2.min.js"></script>
 
-    <!-- Fetching user data and damage data via API and displaying it -->
     <script>
         window.onload = function() {
-          // Fetch user data
-          fetch('/api/user')
-            .then(response => response.json())
-            .then(data => {
-              if (data.user) {
-                document.getElementById('user-name').textContent = data.user.displayName;
-                document.getElementById('user-avatar').src = data.user.photos[0].value;
-
-                // Fetch damage data based on the user's Steam ID
-                fetch(`/api/damage/${data.user.id}`)
-                  .then(response => response.json())
-                  .then(damageData => {
-                    if (damageData.totalDamage) {
-                      document.getElementById('damage-info').textContent = `Total Damage: ${damageData.totalDamage}`;
+            // Fetch user data
+            fetch('/api/user')
+                .then(response => response.json())
+                .then(data => {
+                    const userInfoContainer = document.getElementById('user-info-container');
+                    
+                    if (data.user) {
+                        // 사용자 이름 및 아바타 설정
+                        document.getElementById('user-name').textContent = data.user.displayName;
+                        const avatarImg = document.getElementById('user-avatar');
+                        if (data.user.photos && data.user.photos.length > 0) {
+                            avatarImg.src = data.user.photos[0].value;
+                            avatarImg.style.visibility = 'visible';
+                        } else {
+                            avatarImg.style.visibility = 'hidden';  // 프로필 사진이 없으면 숨김
+                        }
+    
+                        // 사용자 Steam ID에 기반한 피해 데이터를 가져오기
+                        fetch(`/api/damage/${data.user.id}`)
+                            .then(response => response.json())
+                            .then(damageData => {
+                                if (damageData.totalDamage) {
+                                    document.getElementById('damage-info').textContent = `Total Damage: ${damageData.totalDamage}`;
+                                } else {
+                                    document.getElementById('damage-info').textContent = 'No damage data available.';
+                                }
+                            })
+                            .catch(error => {
+                                document.getElementById('damage-info').textContent = 'Error fetching damage data.';
+                                console.error('Error fetching damage data:', error);
+                            });
                     } else {
-                      document.getElementById('damage-info').textContent = 'No damage data available.';
+                        // If the user is not logged in, show the Steam login button
+                        document.getElementById('damage-info').textContent = 'Please log in to see your damage data.';
+                        const userInfo = document.getElementById('user-info');
+                        userInfo.innerHTML = `
+                            <a href="/api/auth/steam" class="btn btn-primary" target="_blank" style="display: flex; align-items: center;" id="steam-login-btn">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg" alt="Steam Icon" style="width: 20px; height: 20px; margin-right: 8px;">
+                                <a>Login with Steam</a>
+                            </a>
+                        `;
                     }
-                  })
-                  .catch(error => {
-                    document.getElementById('damage-info').textContent = 'Error fetching damage data.';
-                    console.error('Error fetching damage data:', error);
-                  });
-              } else {
-                document.getElementById('user-name').textContent = 'Guest';
-                document.getElementById('damage-info').textContent = 'Please log in to see your damage data.';
-              }
-            })
-            .catch(error => console.error('Error fetching user data:', error));
+                })
+                .catch(error => {
+                    console.error('Error fetching user data:', error);
+                });
         };
     </script>
+    
+  
+    
 </body>
 
 </html>
