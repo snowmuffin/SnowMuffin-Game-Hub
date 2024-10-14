@@ -13,7 +13,7 @@ RUN npm install
 COPY . .
 
 # 기본 포트를 노출
-EXPOSE 8888
+EXPOSE 3000
 
 # 애플리케이션을 실행
 CMD ["npm", "start"]
