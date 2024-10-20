@@ -10,44 +10,7 @@ const app = express();
 
 // Steam API Key 설정
 const STEAM_API_KEY = process.env.STEAM_API_KEY || 'your_default_steam_api_key';
-connection.connect((err) => {
-  if (err) {
-    console.error('MySQL 연결 오류:', err);
-    return;
-  }
-  console.log('MySQL에 성공적으로 연결되었습니다.');
 
-  // 테이블이 없으면 생성하는 쿼리
-  const createTableQuery = `
-    CREATE TABLE IF NOT EXISTS online_storage (
-      steam_id BIGINT NOT NULL,
-      stone INT DEFAULT 0,
-      iron INT DEFAULT 0,
-      nickel INT DEFAULT 0,
-      cobalt INT DEFAULT 0,
-      magnesium INT DEFAULT 0,
-      silicon INT DEFAULT 0,
-      silver INT DEFAULT 0,
-      gold INT DEFAULT 0,
-      platinum INT DEFAULT 0,
-      uranium INT DEFAULT 0,
-      ice INT DEFAULT 0,
-      organic INT DEFAULT 0,
-      scrap INT DEFAULT 0,
-      lanthanum INT DEFAULT 0,
-      cerium INT DEFAULT 0,
-      PRIMARY KEY (steam_id)
-    );
-  `;
-
-  connection.query(createTableQuery, (err, result) => {
-    if (err) {
-      console.error('테이블 생성 오류:', err);
-      return;
-    }
-    console.log('테이블이 확인되었거나 성공적으로 생성되었습니다.');
-  });
-});
 
 // 특정 사용자(Steam ID)의 자원 데이터를 반환하는 API
 app.get('/api/resources/steamid', (req, res) => {
@@ -129,7 +92,44 @@ connection.connect((err) => {
   }
   console.log('MySQL에 성공적으로 연결되었습니다.');
 });
+connection.connect((err) => {
+  if (err) {
+    console.error('MySQL 연결 오류:', err);
+    return;
+  }
+  console.log('MySQL에 성공적으로 연결되었습니다.');
 
+  // 테이블이 없으면 생성하는 쿼리
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS online_storage (
+      steam_id BIGINT NOT NULL,
+      stone INT DEFAULT 0,
+      iron INT DEFAULT 0,
+      nickel INT DEFAULT 0,
+      cobalt INT DEFAULT 0,
+      magnesium INT DEFAULT 0,
+      silicon INT DEFAULT 0,
+      silver INT DEFAULT 0,
+      gold INT DEFAULT 0,
+      platinum INT DEFAULT 0,
+      uranium INT DEFAULT 0,
+      ice INT DEFAULT 0,
+      organic INT DEFAULT 0,
+      scrap INT DEFAULT 0,
+      lanthanum INT DEFAULT 0,
+      cerium INT DEFAULT 0,
+      PRIMARY KEY (steam_id)
+    );
+  `;
+
+  connection.query(createTableQuery, (err, result) => {
+    if (err) {
+      console.error('테이블 생성 오류:', err);
+      return;
+    }
+    console.log('테이블이 확인되었거나 성공적으로 생성되었습니다.');
+  });
+});
 // 특정 사용자(Steam ID)의 피해 데이터를 반환하는 API
 app.get('/api/damage/:steamid', (req, res) => {
   // Steam ID를 문자열로 처리
