@@ -36,14 +36,8 @@
                 <div class="sidebar-brand-text mx-3">SEK_SERVER</div>
             </a>
 
-
-
-
-
-
             <!-- Nav Item - Pages Collapse Menu -->
             <li class="nav-item">
-
                 <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <h6 class="collapse-header">Custom Components:</h6>
@@ -53,9 +47,6 @@
                 </div>
             </li>
 
-
-
-
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
 
@@ -63,7 +54,6 @@
             <div class="text-center d-none d-md-inline">
                 <button class="rounded-circle border-0" id="sidebarToggle"></button>
             </div>
-
 
         </ul>
         <!-- End of Sidebar -->
@@ -84,8 +74,6 @@
 
                     <!-- Topbar Navbar -->
                     <ul class="navbar-nav ml-auto">
-
-
                         <div class="topbar-divider d-none d-sm-block"></div>
 
                         <!-- Nav Item - User Information -->
@@ -99,9 +87,7 @@
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
                             </div>
                         </li>
-
                     </ul>
-
                 </nav>
                 <!-- End of Topbar -->
 
@@ -119,6 +105,23 @@
                         <p id="damage-info">Loading...</p>
                     </div>
 
+                    <!-- Inventory Data Section -->
+                    <div id="inventory-data" class="mb-4">
+                        <h4>My Inventory</h4>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Resource</th>
+                                    <th>Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-info">
+                                <tr>
+                                    <td colspan="2">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <!-- /.container-fluid -->
 
@@ -182,8 +185,6 @@
             fetch('/api/user')
                 .then(response => response.json())
                 .then(data => {
-                    const userInfoContainer = document.getElementById('user-info-container');
-                    
                     if (data.user) {
                         // 사용자 이름 및 아바타 설정
                         document.getElementById('user-name').textContent = data.user.displayName;
@@ -194,7 +195,7 @@
                         } else {
                             avatarImg.style.visibility = 'hidden';  // 프로필 사진이 없으면 숨김
                         }
-    
+
                         // 사용자 Steam ID에 기반한 피해 데이터를 가져오기
                         fetch(`/api/damage/${data.user.id}`)
                             .then(response => response.json())
@@ -208,6 +209,35 @@
                             .catch(error => {
                                 document.getElementById('damage-info').textContent = 'Error fetching damage data.';
                                 console.error('Error fetching damage data:', error);
+                            });
+
+                        // 사용자 Steam ID에 기반한 인벤토리 데이터를 가져오기
+                        fetch(`/api/resources/${data.user.id}`)
+                            .then(response => response.json())
+                            .then(inventoryData => {
+                                const inventoryInfo = document.getElementById('inventory-info');
+                                inventoryInfo.innerHTML = '';
+                                if (inventoryData.resources) {
+                                    for (const [resource, quantity] of Object.entries(inventoryData.resources)) {
+                                        const row = document.createElement('tr');
+                                        const resourceCell = document.createElement('td');
+                                        resourceCell.textContent = resource;
+                                        const quantityCell = document.createElement('td');
+                                        quantityCell.textContent = quantity;
+                                        row.appendChild(resourceCell);
+                                        row.appendChild(quantityCell);
+                                        inventoryInfo.appendChild(row);
+                                    }
+                                } else {
+                                    const row = document.createElement('tr');
+                                    row.innerHTML = '<td colspan="2">No inventory data available.</td>';
+                                    inventoryInfo.appendChild(row);
+                                }
+                            })
+                            .catch(error => {
+                                const inventoryInfo = document.getElementById('inventory-info');
+                                inventoryInfo.innerHTML = '<tr><td colspan="2">Error fetching inventory data.</td></tr>';
+                                console.error('Error fetching inventory data:', error);
                             });
                     } else {
                         // If the user is not logged in, show the Steam login button
@@ -226,9 +256,6 @@
                 });
         };
     </script>
-    
-  
-    
 </body>
 
 </html>
