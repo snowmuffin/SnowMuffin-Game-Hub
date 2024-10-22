@@ -12,7 +12,8 @@
     "passport": "^0.4.1",
     "passport-steam": "^1.0.9",
     "mysql2": "^2.3.3",
-    "dotenv": "^10.0.0" 
+    "dotenv": "^10.0.0",
+    "bull": "^4.0.2"
   },
   "keywords": [],
   "author": "",

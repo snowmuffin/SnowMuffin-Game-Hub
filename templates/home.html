@@ -8,7 +8,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Snowmuffin</title>
+    <title>SEK_SERVER</title>
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -200,7 +200,8 @@
                         fetch(`/api/damage/${data.user.id}`)
                             .then(response => response.json())
                             .then(damageData => {
-                                if (damageData.totalDamage) {
+                                
+                                if (damageData) {
                                     document.getElementById('damage-info').textContent = `Total Damage: ${damageData.totalDamage}`;
                                 } else {
                                     document.getElementById('damage-info').textContent = 'No damage data available.';
@@ -219,6 +220,9 @@
                                 inventoryInfo.innerHTML = '';
                                 if (inventoryData.resources) {
                                     for (const [resource, quantity] of Object.entries(inventoryData.resources)) {
+                                        if (resource === 'steam_id') {
+                                            continue;
+                                        }
                                         const row = document.createElement('tr');
                                         const resourceCell = document.createElement('td');
                                         resourceCell.textContent = resource;
