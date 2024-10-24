@@ -1,2 +1,4 @@
 
 .env
+/templates/img/Icons
+nginx/nginx.conf

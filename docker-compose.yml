@@ -4,7 +4,12 @@ services:
   nginx:
     image: nginx:alpine
     ports:
+      - "443:443"
       - "80:80"
+    environment:
+      - DOMAIN=${DOMAIN}
+      - HOST=${HOST}
+    entrypoint: /bin/sh -c "/etc/nginx/entrypoint.sh"
     volumes:
       - ./nginx/:/etc/nginx/
       - ./templates:/usr/share/nginx/html/

@@ -138,14 +138,9 @@
                 <!-- Begin Page Content -->
                 <div class="container-fluid">
 
-                    <!-- Page Heading -->
-                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
-                    </div>
-
                     <!-- Damage Data Section -->
                     <div id="damage-data" class="mb-4">
-                        <h4>My Damage Data</h4>
+                        <h4>Account Balance</h4>
                         <p id="damage-info">Loading...</p>
                     </div>
 
@@ -235,9 +230,9 @@
                             .then(damageData => {
                                 
                                 if (damageData) {
-                                    document.getElementById('damage-info').textContent = `Total Damage: ${damageData.totalDamage}`;
+                                    document.getElementById('damage-info').textContent = `SEK COIN: ${damageData.totalDamage}`;
                                 } else {
-                                    document.getElementById('damage-info').textContent = 'No damage data available.';
+                                    document.getElementById('damage-info').textContent = 'SEK COIN: 0';
                                 }
                             })
                             .catch(error => {
