@@ -149,7 +149,12 @@
                         <p id="damage-info">Loading...</p>
                     </div>
 
-                    <!-- Inventory Data Section -->
+                    <!-- Account Balance Section -->
+                    <div id="account-balance" class="mb-4">
+                        <h4>My Account Balance</h4>
+                        <p id="balance-info">Loading...</p>
+                    </div>
+
                     <!-- Inventory Data Section (Square Grid) -->
                     <div id="inventory-data" class="mb-4">
                         <h4>My Inventory</h4>
@@ -190,7 +195,7 @@
                 <div class="modal-header">
                     <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
                     <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
+                        <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
@@ -233,7 +238,6 @@
                         fetch(`/api/damage/${data.user.id}`)
                             .then(response => response.json())
                             .then(damageData => {
-                                
                                 if (damageData) {
                                     document.getElementById('damage-info').textContent = `Total Damage: ${damageData.totalDamage}`;
                                 } else {
@@ -245,62 +249,78 @@
                                 console.error('Error fetching damage data:', error);
                             });
 
-                        // 사용자 Steam ID에 기반한 인벤토리 데이터를 가져오기
-                        fetch(`/api/resources/${data.user.id}`)// Replace with dynamic steam ID
-                        .then(response => response.json())
-                        .then(inventoryData => {
-                            const inventoryDataDiv = document.getElementById('inventory-data');
-                            inventoryDataDiv.innerHTML = ''; // Clear previous content
-
-                            if (inventoryData.resources) {
-                                for (const [resource, quantity] of Object.entries(inventoryData.resources)) {
-                                    if (resource === 'steam_id') {
-                                        continue;
-                                    }
-                                    if (quantity === 0) {
-                                        continue;
-                                    }
-                                    // Create a grid item for each resource
-                                    const gridItem = document.createElement('div');
-                                    gridItem.className = 'grid-item';
-
-                                    // Content inside the grid item
-                                    const contentDiv = document.createElement('div');
-                                    contentDiv.className = 'content';
-
-                                    // Display resource icon (placeholder for now)
-                                    const resourceImg = document.createElement('img');
-                                    resourceImg.src = `img/Icons/${resource}.jpg`;  // Replace with actual resource icon path
-                                    
-                                    // Display resource name and quantity
-                                    const resourceText = document.createElement('p');
-                                    resourceText.textContent = `${resource}: ${quantity}`;
-
-                                    // Append elements to the grid item
-                                    contentDiv.appendChild(resourceImg);
-                                    contentDiv.appendChild(resourceText);
-                                    gridItem.appendChild(contentDiv);
-                                    inventoryDataDiv.appendChild(gridItem);
+                        // 사용자 Steam ID에 기반한 계좌 잔고 데이터를 가져오기
+                        fetch(`/api/coin_balance/${data.user.id}`)
+                            .then(response => response.json())
+                            .then(balanceData => {
+                                if (balanceData) {
+                                    document.getElementById('balance-info').textContent = `SEK Coins: ${balanceData.coin_balance}`;
+                                } else {
+                                    document.getElementById('balance-info').textContent = 'No balance data available.';
                                 }
-                            } else {
-                                inventoryDataDiv.innerHTML = '<p>No inventory data available.</p>';
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error fetching inventory data:', error);
-                        });
-                            } else {
-                                // If the user is not logged in, show the Steam login button
-                                document.getElementById('damage-info').textContent = 'Please log in to see your damage data.';
-                                const userInfo = document.getElementById('user-info');
-                                userInfo.innerHTML = `
-                                    <a href="/api/auth/steam" class="btn btn-primary" target="_blank" style="display: flex; align-items: center;" id="steam-login-btn">
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg" alt="Steam Icon" style="width: 20px; height: 20px; margin-right: 8px;">
-                                        <a>Login with Steam</a>
-                                    </a>
-                                `;
-                            }
-                        })
+                            })
+                            .catch(error => {
+                                document.getElementById('balance-info').textContent = 'Error fetching balance data.';
+                                console.error('Error fetching balance data:', error);
+                            });
+
+                        // 사용자 Steam ID에 기반한 인벤토리 데이터를 가져오기
+                        fetch(`/api/resources/${data.user.id}`)
+                            .then(response => response.json())
+                            .then(inventoryData => {
+                                const inventoryDataDiv = document.getElementById('inventory-data');
+                                inventoryDataDiv.innerHTML = ''; // Clear previous content
+
+                                if (inventoryData.resources) {
+                                    for (const [resource, quantity] of Object.entries(inventoryData.resources)) {
+                                        if (resource === 'steam_id') {
+                                            continue;
+                                        }
+                                        if (quantity === 0) {
+                                            continue;
+                                        }
+                                        // Create a grid item for each resource
+                                        const gridItem = document.createElement('div');
+                                        gridItem.className = 'grid-item';
+
+                                        // Content inside the grid item
+                                        const contentDiv = document.createElement('div');
+                                        contentDiv.className = 'content';
+
+                                        // Display resource icon (placeholder for now)
+                                        const resourceImg = document.createElement('img');
+                                        resourceImg.src = `img/Icons/${resource}.jpg`;  // Replace with actual resource icon path
+                                        
+                                        // Display resource name and quantity
+                                        const resourceText = document.createElement('p');
+                                        resourceText.textContent = `${resource}: ${quantity}`;
+
+                                        // Append elements to the grid item
+                                        contentDiv.appendChild(resourceImg);
+                                        contentDiv.appendChild(resourceText);
+                                        gridItem.appendChild(contentDiv);
+                                        inventoryDataDiv.appendChild(gridItem);
+                                    }
+                                } else {
+                                    inventoryDataDiv.innerHTML = '<p>No inventory data available.</p>';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error fetching inventory data:', error);
+                            });
+                    } else {
+                        // If the user is not logged in, show the Steam login button
+                        document.getElementById('damage-info').textContent = 'Please log in to see your damage data.';
+                        document.getElementById('balance-info').textContent = 'Please log in to see your account balance.';
+                        const userInfo = document.getElementById('user-info');
+                        userInfo.innerHTML = `
+                            <a href="/api/auth/steam" class="btn btn-primary" target="_blank" style="display: flex; align-items: center;" id="steam-login-btn">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg" alt="Steam Icon" style="width: 20px; height: 20px; margin-right: 8px;">
+                                <span>Login with Steam</span>
+                            </a>
+                        `;
+                    }
+                })
                 .catch(error => {
                     console.error('Error fetching user data:', error);
                 });
