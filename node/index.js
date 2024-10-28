@@ -78,26 +78,57 @@ function verifyUser(req, res, next) {
 }
 // Steam 로그인 전략 설정
 passport.use(new SteamStrategy({
-  returnURL: 'http://localhost:3000/api/auth/steam/return',
-  realm: 'http://localhost:3000',
+  returnURL: process.env.RETURN_URL || 'http://localhost:3000/api/auth/steam/return',  // 환경 변수 사용
+  realm: process.env.REALM || 'http://localhost:3000/',  // 환경 변수 사용
   apiKey: STEAM_API_KEY
 }, (identifier, profile, done) => {
   process.nextTick(() => {
-    // 사용자 프로필 객체에 id 필드를 추가
-    profile.id = identifier; // Steam ID를 프로필에 추가
     return done(null, profile);
   });
 }));
 
-// Steam 로그인 라우트
+
+
 app.get('/api/auth/steam', passport.authenticate('steam'));
 
-app.get('/api/auth/steam/return', passport.authenticate('steam', { failureRedirect: '/' }), (req, res) => {
-  const token = jwt.sign({ id: req.user.id, displayName: req.user.displayName }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  
-  // 클라이언트 측으로 토큰을 전달하여 인증 상태를 유지하도록 설정
-  res.redirect(`http://localhost:5173/home?token=${token}`);
-});
+app.get(
+  '/api/auth/steam/return',
+  passport.authenticate('steam', { failureMessage: true }),
+  (req, res) => {
+    if (req.user) {
+      // 인증 성공 시 부모 창으로 메시지 전송 후 창 닫기
+      const user = JSON.stringify(req.user); // JSON 직렬화 처리
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage(
+              { status: 200, statusText: 'OK', data: { message: 'Steam 인증 성공', user: ${user} } },
+              '*'
+            );
+            window.close();
+          } else {
+            alert('인증 후 창을 닫을 수 없습니다.');
+          }
+        </script>
+      `);
+    } else {
+      // 인증 실패 시 부모 창으로 실패 메시지 전송 후 창 닫기
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage(
+              { status: 401, statusText: 'Unauthorized', data: { error: 'Steam 인증 실패' } },
+              '*'
+            );
+            window.close();
+          } else {
+            alert('인증 후 창을 닫을 수 없습니다.');
+          }
+        </script>
+      `);
+    }
+  }
+);
 
 // 로그인한 사용자 정보 반환
 app.get('/api/user', (req, res) => {
@@ -110,10 +141,10 @@ app.get('/api/user', (req, res) => {
 
 // MySQL 연결 설정
 const connection = mysql.createConnection({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'my-secret-pw',
-  database: process.env.DB_NAME || 'mydatabase',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER ,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   supportBigNumbers: true,   // 큰 숫자 지원
   bigNumberStrings: true     // BIGINT를 문자열로 처리
 });
@@ -373,20 +404,6 @@ function getDrop(damage) {
 
   return null; // 이론적으로는 여기까지 오지 않음
 }
-function allowLocalOnly(req, res, next) {
-  const localIps = ['61.72.176.150', '::1'];
-
-  // 요청의 IP 주소가 로컬 IP인지 확인
-  const requestIp = req.ip;
-
-  if (localIps.includes(requestIp)) {
-    // 로컬 IP에서 요청이 들어왔을 때만 다음 미들웨어로 이동
-    next();
-  } else {
-    // 로컬 IP가 아닌 경우 접근 제한 응답
-    res.status(403).json({ error: 'Access restricted to local only' });
-  }
-}
 
 
 
@@ -453,9 +470,11 @@ app.post('/api/damage_logs', async (req, res) => {
   }
 });
 // 서버 시작
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
+const HOST = process.env.HOST;
+
 app.listen(PORT, () => {
-  console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+  console.log(`서버가 http://${HOST}:${PORT} 에서 실행 중입니다.`);
 });
 
 // 서버 종료 시 MySQL 연결 해제
