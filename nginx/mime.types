@@ -6,4 +6,5 @@ types {
     image/jpeg                            jpeg jpg;
     image/png                             png;
     application/javascript                js;
+    image/svg+xml                         svg svgz;  # SVG 타입 추가
 }

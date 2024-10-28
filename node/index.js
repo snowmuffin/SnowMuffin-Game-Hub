@@ -4,7 +4,7 @@ const session = require('express-session');
 const passport = require('passport');
 const SteamStrategy = require('passport-steam').Strategy;
 const mysql = require('mysql2');
-
+const jwt = require('jsonwebtoken');
 // Express 앱 생성
 const app = express();
 app.use(express.json());
@@ -78,11 +78,13 @@ function verifyUser(req, res, next) {
 }
 // Steam 로그인 전략 설정
 passport.use(new SteamStrategy({
-  returnURL: process.env.RETURN_URL || 'http://localhost:3000/api/auth/steam/return',  // 환경 변수 사용
-  realm: process.env.REALM || 'http://localhost:3000/',  // 환경 변수 사용
+  returnURL: 'http://localhost:3000/api/auth/steam/return',
+  realm: 'http://localhost:3000',
   apiKey: STEAM_API_KEY
 }, (identifier, profile, done) => {
   process.nextTick(() => {
+    // 사용자 프로필 객체에 id 필드를 추가
+    profile.id = identifier; // Steam ID를 프로필에 추가
     return done(null, profile);
   });
 }));
@@ -91,7 +93,10 @@ passport.use(new SteamStrategy({
 app.get('/api/auth/steam', passport.authenticate('steam'));
 
 app.get('/api/auth/steam/return', passport.authenticate('steam', { failureRedirect: '/' }), (req, res) => {
-  res.redirect(process.env.REDIRECT_URL || 'http://localhost/'); // 로그인 후 리디렉션할 페이지를 환경 변수로 설정
+  const token = jwt.sign({ id: req.user.id, displayName: req.user.displayName }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  
+  // 클라이언트 측으로 토큰을 전달하여 인증 상태를 유지하도록 설정
+  res.redirect(`http://localhost:5173/home?token=${token}`);
 });
 
 // 로그인한 사용자 정보 반환
@@ -367,7 +372,8 @@ function getDrop(damage) {
   }
 
   return null; // 이론적으로는 여기까지 오지 않음
-}function allowLocalOnly(req, res, next) {
+}
+function allowLocalOnly(req, res, next) {
   const localIps = ['61.72.176.150', '::1'];
 
   // 요청의 IP 주소가 로컬 IP인지 확인

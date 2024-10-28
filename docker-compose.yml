@@ -12,7 +12,7 @@ services:
     entrypoint: /bin/sh -c "/etc/nginx/entrypoint.sh"
     volumes:
       - ./nginx/:/etc/nginx/
-      - ./templates:/usr/share/nginx/html/
+      - ./sek_server_web/:/usr/share/nginx/sek_server_web/
     depends_on:
       - node
 
@@ -27,6 +27,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}   # .env 파일에서 읽어옵니다.
       - DB_NAME=${DB_NAME}           # .env 파일에서 읽어옵니다.
       - STEAM_API_KEY=${STEAM_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
     volumes:
       - ./node:/home/node/app
       - ./node/node_modules:/home/node/app/node_modules

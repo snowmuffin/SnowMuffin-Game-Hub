@@ -8,13 +8,15 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
+    "bull": "^4.0.2",
+    "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "express-session": "^1.17.1",
-    "passport": "^0.4.1",
-    "passport-steam": "^1.0.9",
+    "jsonwebtoken": "^8.5.1",
     "mysql2": "^2.3.3",
-    "dotenv": "^10.0.0",
-    "bull": "^4.0.2"
+    "nodejs": "file:",
+    "passport": "^0.4.1",
+    "passport-steam": "^1.0.9"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
