@@ -97,12 +97,20 @@ app.get(
   (req, res) => {
     if (req.user) {
       // 인증 성공 시 부모 창으로 메시지 전송 후 창 닫기
-      const user = JSON.stringify(req.user); // JSON 직렬화 처리
+      const userData = JSON.stringify({
+        user: {
+          steamId: req.user.id,               // Steam 고유 ID
+          displayName: req.user.displayName,   // Steam 프로필 이름
+          profileUrl: req.user._json.profileurl, // Steam 프로필 URL
+          avatar: req.user._json.avatar        // Steam 프로필 이미지
+        }
+      });
+
       res.send(`
         <script>
           if (window.opener) {
             window.opener.postMessage(
-              { status: 200, statusText: 'OK', data: { message: 'Steam 인증 성공', user: ${user} } },
+              { status: 200, statusText: 'OK', data: ${userData} },
               '*'
             );
             window.close();
