@@ -50,5 +50,18 @@ services:
     ports:
       - "3306:3306"
 
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}   # .env 파일에서 읽어옵니다.
+
+
 volumes:
   mysql_data:

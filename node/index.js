@@ -12,8 +12,8 @@ app.use(express.json());
 const STEAM_API_KEY = process.env.STEAM_API_KEY || 'your_default_steam_api_key';
 
 const dropTable = {
-  prototech_frame: 11, prototech_panel: 4, prototech_capacitor: 4, prototech_propulsion_unit: 4,
-  prototech_machinery: 4, prototech_circuitry: 4, prototech_cooling_unit: 8,
+  PrototechFrame: 11, PrototechPanel: 4, c: 4, PrototechPropulsionUnit: 4,
+  PrototechMachinery: 4, PrototechCircuitry: 4, PrototechCoolingUnit: 8,
   DefenseUpgradeModule_Level1: 1, DefenseUpgradeModule_Level2: 2, DefenseUpgradeModule_Level3: 3,
   DefenseUpgradeModule_Level4: 4, DefenseUpgradeModule_Level5: 5, DefenseUpgradeModule_Level6: 6,
   DefenseUpgradeModule_Level7: 7, DefenseUpgradeModule_Level8: 8, DefenseUpgradeModule_Level9: 9,
@@ -78,8 +78,8 @@ function verifyUser(req, res, next) {
 }
 // Steam 로그인 전략 설정
 passport.use(new SteamStrategy({
-  returnURL: process.env.RETURN_URL || 'http://localhost:3000/api/auth/steam/return',  // 환경 변수 사용
-  realm: process.env.REALM || 'http://localhost:3000/',  // 환경 변수 사용
+  returnURL: process.env.RETURN_URL || 'http://se.snowmuffingame.com/api/auth/steam/return',  // 환경 변수 사용
+  realm: process.env.REALM || 'http://se.snowmuffingame.com/',  // 환경 변수 사용
   apiKey: STEAM_API_KEY
 }, (identifier, profile, done) => {
   process.nextTick(() => {
@@ -91,7 +91,7 @@ passport.use(new SteamStrategy({
 app.get('/api/auth/steam', passport.authenticate('steam'));
 
 app.get('/api/auth/steam/return', passport.authenticate('steam', { failureRedirect: '/' }), (req, res) => {
-  res.redirect(process.env.REDIRECT_URL || 'http://localhost/'); // 로그인 후 리디렉션할 페이지를 환경 변수로 설정
+  res.redirect(process.env.REDIRECT_URL || 'http://se.snowmuffingame.com/'); // 로그인 후 리디렉션할 페이지를 환경 변수로 설정
 });
 
 // 로그인한 사용자 정보 반환
@@ -105,7 +105,7 @@ app.get('/api/user', (req, res) => {
 
 // MySQL 연결 설정
 const connection = mysql.createConnection({
-  host: process.env.DB_HOST || 'localhost',
+  host: process.env.DB_HOST || 'se.snowmuffingame.com',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || 'my-secret-pw',
   database: process.env.DB_NAME || 'mydatabase',
@@ -124,125 +124,125 @@ connection.connect((err) => {
   // 테이블이 없으면 생성하는 쿼리
   const createTableQuery = `
   CREATE TABLE IF NOT EXISTS online_storage (
-    steam_id BIGINT NOT NULL,
-    stone FLOAT DEFAULT 0,
-    iron FLOAT DEFAULT 0,
-    nickel FLOAT DEFAULT 0,
-    cobalt FLOAT DEFAULT 0,
-    magnesium FLOAT DEFAULT 0,
-    silicon FLOAT DEFAULT 0,
-    silver FLOAT DEFAULT 0,
-    gold FLOAT DEFAULT 0,
-    platinum FLOAT DEFAULT 0,
-    uranium FLOAT DEFAULT 0,
-    ice FLOAT DEFAULT 0,
-    scrap FLOAT DEFAULT 0,
-    lanthanum FLOAT DEFAULT 0,
-    cerium FLOAT DEFAULT 0,
-    construction INT DEFAULT 0,
-    metal_grid INT DEFAULT 0,
-    interior_plate INT DEFAULT 0,
-    steel_plate INT DEFAULT 0,
-    girder INT DEFAULT 0,
-    small_tube INT DEFAULT 0,
-    large_tube INT DEFAULT 0,
-    motor INT DEFAULT 0,
-    display INT DEFAULT 0,
-    bulletproof_glass INT DEFAULT 0,
-    superconductor INT DEFAULT 0,
-    computer INT DEFAULT 0,
-    reactor INT DEFAULT 0,
-    thrust INT DEFAULT 0,
-    gravity_generator INT DEFAULT 0,
-    medical INT DEFAULT 0,
-    radio_communication INT DEFAULT 0,
-    detector INT DEFAULT 0,
-    explosives INT DEFAULT 0,
-    solar_cell INT DEFAULT 0,
-    power_cell INT DEFAULT 0,
-    canvas INT DEFAULT 0,
-    engineer_plushie INT DEFAULT 0,
-    sabiroid_plushie INT DEFAULT 0,
-    prototech_frame INT DEFAULT 0,
-    prototech_panel INT DEFAULT 0,
-    prototech_capacitor INT DEFAULT 0,
-    prototech_propulsion_unit INT DEFAULT 0,
-    prototech_machinery INT DEFAULT 0,
-    prototech_circuitry INT DEFAULT 0,
-    prototech_cooling_unit INT DEFAULT 0,
-    DefenseUpgradeModule_Level1 INT DEFAULT 0,
-    DefenseUpgradeModule_Level2 INT DEFAULT 0,
-    DefenseUpgradeModule_Level3 INT DEFAULT 0,
-    DefenseUpgradeModule_Level4 INT DEFAULT 0,
-    DefenseUpgradeModule_Level5 INT DEFAULT 0,
-    DefenseUpgradeModule_Level6 INT DEFAULT 0,
-    DefenseUpgradeModule_Level7 INT DEFAULT 0,
-    DefenseUpgradeModule_Level8 INT DEFAULT 0,
-    DefenseUpgradeModule_Level9 INT DEFAULT 0,
-    DefenseUpgradeModule_Level10 INT DEFAULT 0,
-    AttackUpgradeModule_Level1 INT DEFAULT 0,
-    AttackUpgradeModule_Level2 INT DEFAULT 0,
-    AttackUpgradeModule_Level3 INT DEFAULT 0,
-    AttackUpgradeModule_Level4 INT DEFAULT 0,
-    AttackUpgradeModule_Level5 INT DEFAULT 0,
-    AttackUpgradeModule_Level6 INT DEFAULT 0,
-    AttackUpgradeModule_Level7 INT DEFAULT 0,
-    AttackUpgradeModule_Level8 INT DEFAULT 0,
-    AttackUpgradeModule_Level9 INT DEFAULT 0,
-    AttackUpgradeModule_Level10 INT DEFAULT 0,
-    PowerEfficiencyUpgradeModule_Level1 INT DEFAULT 0,
-    PowerEfficiencyUpgradeModule_Level2 INT DEFAULT 0,
-    PowerEfficiencyUpgradeModule_Level3 INT DEFAULT 0,
-    PowerEfficiencyUpgradeModule_Level4 INT DEFAULT 0,
-    PowerEfficiencyUpgradeModule_Level5 INT DEFAULT 0,
-    PowerEfficiencyUpgradeModule_Level6 INT DEFAULT 0,
-    PowerEfficiencyUpgradeModule_Level7 INT DEFAULT 0,
-    PowerEfficiencyUpgradeModule_Level8 INT DEFAULT 0,
-    PowerEfficiencyUpgradeModule_Level9 INT DEFAULT 0,
-    PowerEfficiencyUpgradeModule_Level10 INT DEFAULT 0,
-    BerserkerModule_Level1 INT DEFAULT 0,
-    BerserkerModule_Level2 INT DEFAULT 0,
-    BerserkerModule_Level3 INT DEFAULT 0,
-    BerserkerModule_Level4 INT DEFAULT 0,
-    BerserkerModule_Level5 INT DEFAULT 0,
-    BerserkerModule_Level6 INT DEFAULT 0,
-    BerserkerModule_Level7 INT DEFAULT 0,
-    BerserkerModule_Level8 INT DEFAULT 0,
-    BerserkerModule_Level9 INT DEFAULT 0,
-    BerserkerModule_Level10 INT DEFAULT 0,
-    SpeedModule_Level1 INT DEFAULT 0,
-    SpeedModule_Level2 INT DEFAULT 0,
-    SpeedModule_Level3 INT DEFAULT 0,
-    SpeedModule_Level4 INT DEFAULT 0,
-    SpeedModule_Level5 INT DEFAULT 0,
-    SpeedModule_Level6 INT DEFAULT 0,
-    SpeedModule_Level7 INT DEFAULT 0,
-    SpeedModule_Level8 INT DEFAULT 0,
-    SpeedModule_Level9 INT DEFAULT 0,
-    SpeedModule_Level10 INT DEFAULT 0,
-    FortressModule_Level1 INT DEFAULT 0,
-    FortressModule_Level2 INT DEFAULT 0,
-    FortressModule_Level3 INT DEFAULT 0,
-    FortressModule_Level4 INT DEFAULT 0,
-    FortressModule_Level5 INT DEFAULT 0,
-    FortressModule_Level6 INT DEFAULT 0,
-    FortressModule_Level7 INT DEFAULT 0,
-    FortressModule_Level8 INT DEFAULT 0,
-    FortressModule_Level9 INT DEFAULT 0,
-    FortressModule_Level10 INT DEFAULT 0,
-    prototech_scrap FLOAT DEFAULT 0,
-    ingot_stone FLOAT DEFAULT 0,
-    ingot_iron FLOAT DEFAULT 0,
-    ingot_nickel FLOAT DEFAULT 0,
-    ingot_cobalt FLOAT DEFAULT 0,
-    ingot_magnesium FLOAT DEFAULT 0,
-    ingot_silicon FLOAT DEFAULT 0,
-    ingot_silver FLOAT DEFAULT 0,
-    ingot_gold FLOAT DEFAULT 0,
-    ingot_platinum FLOAT DEFAULT 0,
-    ingot_uranium FLOAT DEFAULT 0,
-    Prime_Matter INT DEFAULT 0,
-    PRIMARY KEY (steam_id)
+  steam_id BIGINT NOT NULL,
+  stone FLOAT DEFAULT 0,
+  iron FLOAT DEFAULT 0,
+  nickel FLOAT DEFAULT 0,
+  cobalt FLOAT DEFAULT 0,
+  magnesium FLOAT DEFAULT 0,
+  silicon FLOAT DEFAULT 0,
+  silver FLOAT DEFAULT 0,
+  gold FLOAT DEFAULT 0,
+  platinum FLOAT DEFAULT 0,
+  uranium FLOAT DEFAULT 0,
+  ice FLOAT DEFAULT 0,
+  scrap FLOAT DEFAULT 0,
+  lanthanum FLOAT DEFAULT 0,
+  cerium FLOAT DEFAULT 0,
+  Construction INT DEFAULT 0,
+  MetalGrid INT DEFAULT 0,
+  InteriorPlate INT DEFAULT 0,
+  SteelPlate INT DEFAULT 0,
+  Girder INT DEFAULT 0,
+  SmallTube INT DEFAULT 0,
+  LargeTube INT DEFAULT 0,
+  Motor INT DEFAULT 0,
+  Display INT DEFAULT 0,
+  BulletproofGlass INT DEFAULT 0,
+  Superconductor INT DEFAULT 0,
+  Computer INT DEFAULT 0,
+  Reactor INT DEFAULT 0,
+  Thrust INT DEFAULT 0,
+  GravityGenerator INT DEFAULT 0,
+  Medical INT DEFAULT 0,
+  RadioCommunication INT DEFAULT 0,
+  Detector INT DEFAULT 0,
+  Explosives INT DEFAULT 0,
+  SolarCell INT DEFAULT 0,
+  PowerCell INT DEFAULT 0,
+  Canvas INT DEFAULT 0,
+  EngineerPlushie INT DEFAULT 0,
+  SabiroidPlushie INT DEFAULT 0,
+  PrototechFrame INT DEFAULT 0,
+  PrototechPanel INT DEFAULT 0,
+  PrototechCapacitor INT DEFAULT 0,
+  PrototechPropulsionUnit INT DEFAULT 0,
+  PrototechMachinery INT DEFAULT 0,
+  PrototechCircuitry INT DEFAULT 0,
+  PrototechCoolingUnit INT DEFAULT 0,
+  DefenseUpgradeModule_Level1 INT DEFAULT 0,
+  DefenseUpgradeModule_Level2 INT DEFAULT 0,
+  DefenseUpgradeModule_Level3 INT DEFAULT 0,
+  DefenseUpgradeModule_Level4 INT DEFAULT 0,
+  DefenseUpgradeModule_Level5 INT DEFAULT 0,
+  DefenseUpgradeModule_Level6 INT DEFAULT 0,
+  DefenseUpgradeModule_Level7 INT DEFAULT 0,
+  DefenseUpgradeModule_Level8 INT DEFAULT 0,
+  DefenseUpgradeModule_Level9 INT DEFAULT 0,
+  DefenseUpgradeModule_Level10 INT DEFAULT 0,
+  AttackUpgradeModule_Level1 INT DEFAULT 0,
+  AttackUpgradeModule_Level2 INT DEFAULT 0,
+  AttackUpgradeModule_Level3 INT DEFAULT 0,
+  AttackUpgradeModule_Level4 INT DEFAULT 0,
+  AttackUpgradeModule_Level5 INT DEFAULT 0,
+  AttackUpgradeModule_Level6 INT DEFAULT 0,
+  AttackUpgradeModule_Level7 INT DEFAULT 0,
+  AttackUpgradeModule_Level8 INT DEFAULT 0,
+  AttackUpgradeModule_Level9 INT DEFAULT 0,
+  AttackUpgradeModule_Level10 INT DEFAULT 0,
+  PowerEfficiencyUpgradeModule_Level1 INT DEFAULT 0,
+  PowerEfficiencyUpgradeModule_Level2 INT DEFAULT 0,
+  PowerEfficiencyUpgradeModule_Level3 INT DEFAULT 0,
+  PowerEfficiencyUpgradeModule_Level4 INT DEFAULT 0,
+  PowerEfficiencyUpgradeModule_Level5 INT DEFAULT 0,
+  PowerEfficiencyUpgradeModule_Level6 INT DEFAULT 0,
+  PowerEfficiencyUpgradeModule_Level7 INT DEFAULT 0,
+  PowerEfficiencyUpgradeModule_Level8 INT DEFAULT 0,
+  PowerEfficiencyUpgradeModule_Level9 INT DEFAULT 0,
+  PowerEfficiencyUpgradeModule_Level10 INT DEFAULT 0,
+  BerserkerModule_Level1 INT DEFAULT 0,
+  BerserkerModule_Level2 INT DEFAULT 0,
+  BerserkerModule_Level3 INT DEFAULT 0,
+  BerserkerModule_Level4 INT DEFAULT 0,
+  BerserkerModule_Level5 INT DEFAULT 0,
+  BerserkerModule_Level6 INT DEFAULT 0,
+  BerserkerModule_Level7 INT DEFAULT 0,
+  BerserkerModule_Level8 INT DEFAULT 0,
+  BerserkerModule_Level9 INT DEFAULT 0,
+  BerserkerModule_Level10 INT DEFAULT 0,
+  SpeedModule_Level1 INT DEFAULT 0,
+  SpeedModule_Level2 INT DEFAULT 0,
+  SpeedModule_Level3 INT DEFAULT 0,
+  SpeedModule_Level4 INT DEFAULT 0,
+  SpeedModule_Level5 INT DEFAULT 0,
+  SpeedModule_Level6 INT DEFAULT 0,
+  SpeedModule_Level7 INT DEFAULT 0,
+  SpeedModule_Level8 INT DEFAULT 0,
+  SpeedModule_Level9 INT DEFAULT 0,
+  SpeedModule_Level10 INT DEFAULT 0,
+  FortressModule_Level1 INT DEFAULT 0,
+  FortressModule_Level2 INT DEFAULT 0,
+  FortressModule_Level3 INT DEFAULT 0,
+  FortressModule_Level4 INT DEFAULT 0,
+  FortressModule_Level5 INT DEFAULT 0,
+  FortressModule_Level6 INT DEFAULT 0,
+  FortressModule_Level7 INT DEFAULT 0,
+  FortressModule_Level8 INT DEFAULT 0,
+  FortressModule_Level9 INT DEFAULT 0,
+  FortressModule_Level10 INT DEFAULT 0,
+  prototech_scrap FLOAT DEFAULT 0,
+  ingot_stone FLOAT DEFAULT 0,
+  ingot_iron FLOAT DEFAULT 0,
+  ingot_nickel FLOAT DEFAULT 0,
+  ingot_cobalt FLOAT DEFAULT 0,
+  ingot_magnesium FLOAT DEFAULT 0,
+  ingot_silicon FLOAT DEFAULT 0,
+  ingot_silver FLOAT DEFAULT 0,
+  ingot_gold FLOAT DEFAULT 0,
+  ingot_platinum FLOAT DEFAULT 0,
+  ingot_uranium FLOAT DEFAULT 0,
+  Prime_Matter INT DEFAULT 0,
+  PRIMARY KEY (steam_id)
   );
 `;
 
@@ -269,7 +269,9 @@ app.get('/api/resources/:steamid',verifyUser, (req, res) => {
     if (results.length > 0) {
       // 데이터가 있는 경우
       res.json({ steamid: steamId, resources: results[0] });
-    } else {
+    } 
+    else {
+      const insertQuery = 'INSERT INTO online_storage (steam_id) VALUES (?)';
       // 데이터가 없는 경우 새로운 행 삽입
       connection.query(insertQuery, [steamId], (insertErr, insertResult) => {
         if (insertErr) {
@@ -346,7 +348,7 @@ function getDrop(damage) {
   let totalWeight = 0;
 
   for (const [item, rarity] of Object.entries(dropTable)) {
-    const adjustedWeight = Math.pow(0.4, rarity); // 희귀도가 높을수록 가중치가 지수적으로 감소
+    const adjustedWeight = Math.pow(0.35, rarity); // 희귀도가 높을수록 가중치가 지수적으로 감소
     adjustedWeights[item] = adjustedWeight;
     totalWeight += adjustedWeight;
   }
@@ -384,6 +386,7 @@ function getDrop(damage) {
 
 
 
+// '/api/damage_logs' 엔드포인트 수정
 app.post('/api/damage_logs', async (req, res) => {
   const damageLogs = req.body;
   console.log('Received damage logs:', req.body);
@@ -399,13 +402,16 @@ app.post('/api/damage_logs', async (req, res) => {
       let { steam_id, total_damage } = log;
 
       if (!steam_id || total_damage === undefined) {
-        console.log('Invalid log data:', log);
+        //console.log('Invalid log data:', log);
         return Promise.resolve();  // 잘못된 데이터는 무시
       }
 
       steam_id = BigInt(steam_id); // Steam ID를 문자열로 처리
 
-      // 손상 로그 저장과 계좌 업데이트를 동시에 처리
+      // 드랍 아이템 결정
+      const droppedItem = getDrop(total_damage);
+
+      // 피해 로그 저장과 계좌 업데이트, 드랍 아이템 처리를 동시에 수행
       const insertDamageLogQuery = `
         INSERT INTO damage_logs (steam_id, total_damage)
         VALUES (?, ?)
@@ -418,6 +424,16 @@ app.post('/api/damage_logs', async (req, res) => {
         ON DUPLICATE KEY UPDATE sek_coin_balance = sek_coin_balance + ?;
       `;
 
+      // 드랍된 아이템을 온라인 스토리지에 추가하는 쿼리
+      let updateOnlineStorageQuery = null;
+      if (droppedItem) {
+        updateOnlineStorageQuery = `
+          INSERT INTO online_storage (steam_id, \`${droppedItem}\`)
+          VALUES (?, 1)
+          ON DUPLICATE KEY UPDATE \`${droppedItem}\` = \`${droppedItem}\` + 1;
+        `;
+      }
+
       return new Promise((resolve, reject) => {
         // 피해 로그 저장
         connection.query(insertDamageLogQuery, [steam_id.toString(), total_damage], (err, result) => {
@@ -425,7 +441,7 @@ app.post('/api/damage_logs', async (req, res) => {
             console.log('Error saving damage log:', err);
             return reject(err);
           }
-          console.log(`Damage log for Steam ID ${steam_id} successfully saved with damage ${total_damage}.`);
+          //console.log(`Damage log for Steam ID ${steam_id} successfully saved with damage ${total_damage}.`);
 
           // 계좌에 코인 추가
           connection.query(updateCoinBalanceQuery, [steam_id.toString(), total_damage, total_damage], (coinErr, coinResult) => {
@@ -433,23 +449,36 @@ app.post('/api/damage_logs', async (req, res) => {
               console.log('Error updating coin balance:', coinErr);
               return reject(coinErr);
             }
-            console.log(`Coin balance updated for Steam ID ${steam_id} by adding ${total_damage/10} coins.`);
-            resolve();
+            //console.log(`Coin balance updated for Steam ID ${steam_id} by adding ${total_damage} coins.`);
+
+            if (droppedItem) {
+              // 드랍된 아이템을 온라인 스토리지에 추가
+              connection.query(updateOnlineStorageQuery, [steam_id.toString()], (storageErr, storageResult) => {
+                if (storageErr) {
+                  console.log('Error updating online storage:', storageErr);
+                  return reject(storageErr);
+                }
+                console.log(`Dropped item ${droppedItem} added to online storage for Steam ID ${steam_id}.`);
+                resolve();
+              });
+            } else {
+              resolve();
+            }
           });
         });
       });
     }));
 
-    res.send('Damage logs and coin balances updated successfully');
+    res.send('Damage logs, coin balances, and dropped items updated successfully');
   } catch (err) {
-    console.log('Error processing damage logs and updating coin balances:', err);
-    res.status(500).json({ error: 'Failed to process damage logs and update coin balances' });
+    console.log('Error processing damage logs and updating data:', err);
+    res.status(500).json({ error: 'Failed to process damage logs and update data' });
   }
 });
 // 서버 시작
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+  console.log(`서버가 http://se.snowmuffingame.com:${PORT} 에서 실행 중입니다.`);
 });
 
 // 서버 종료 시 MySQL 연결 해제

@@ -27,31 +27,4 @@ http {
             root /usr/share/nginx/html;
         }
     }
-        # localhost 전용 server 블록, 외부 IP 차단 설정 추가
-    server {
-        listen 80;
-        server_name localhost;
-
-        # 내부 IP 허용, 외부 IP 차단
-        allow 127.0.0.1;  # 로컬 접근 허용
-        deny all;         # 외부 접근 차단
-
-        location / {
-            root   /usr/share/nginx/html;
-            index  adminhome.html;
-        }
-
-        location /api/ {
-            proxy_pass http://node:3000;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-
-        error_page 500 502 503 504 /50x.html;
-        location = /50x.html {
-            root /usr/share/nginx/html;
-        }
-    }
 }
