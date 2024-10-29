@@ -149,14 +149,50 @@ app.get(
   }
 );
 
-// 로그인한 사용자 정보 반환 라우트
-app.get('/api/user', (req, res) => {
+
+function generateToken(steamId) {
+  const payload = { steamId };
+  return jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' }); // 토큰 만료 시간 설정
+}
+app.post('/api/auth/getUserData', (req, res) => {
   if (req.isAuthenticated()) {
-    logger.info(`User info requested. Steam ID: ${req.user.id}`);
-    res.json({ user: req.user });
+    const steamId = req.body.steamId;
+
+    if (!steamId) {
+      logger.warn('Steam ID가 제공되지 않았습니다.');
+      return res.status(400).json({ error: 'Steam ID가 필요합니다.' });
+    }
+
+    
+
+
+    logger.info(`데이터 요청 수신. Steam ID: ${steamId}`);
+    const query = 'SELECT * FROM user_data WHERE steam_id = ?';
+    logger.debug(`실행 중인 SQL 쿼리: ${query} with Steam ID: ${steamId}`);
+
+    connection.query(query, [steamId], (err, results) => {
+      if (err) {
+        logger.error(`유저 데이터 조회 오류 for Steam ID ${steamId}: ${err.message}`);
+        return res.status(500).json({ error: '데이터베이스 오류' });
+      }
+
+      if (results.length > 0) {
+        // 토큰 생성 (예: JWT 사용) 후 본문에 추가
+        const token = generateToken(steamId); // 예: 토큰 생성 함수
+        res.status(200).json({ 
+          status: 200, 
+          statusText: 'ok', 
+          userdata: results[0],
+          token: token // 응답 본문에 토큰 포함
+        });
+      }  else {
+        logger.info(`Steam ID ${steamId}에 대한 데이터가 존재하지 않습니다.`);
+        res.status(404).json({ status: 404, statusText: '데이터가 존재하지 않습니다.', data: null });
+      }
+    });
   } else {
-    logger.info('User info requested, but user is not authenticated.');
-    res.json({ user: null });
+    logger.info('인증되지 않은 사용자가 데이터 요청을 시도했습니다.');
+    res.status(401).json({ error: '인증이 필요합니다.' });
   }
 });
 
