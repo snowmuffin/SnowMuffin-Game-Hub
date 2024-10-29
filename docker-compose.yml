@@ -65,5 +65,7 @@ services:
     environment:
       PMA_HOST: mysql
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ./apache.conf:/etc/apache2/conf-enabled/servername.conf
 volumes:
   mysql_data:
