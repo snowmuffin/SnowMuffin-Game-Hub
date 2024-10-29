@@ -1,0 +1,3 @@
+[submodule "sek_server_web"]
+	path = sek_server_web
+	url = https://github.com/snowmuffin/sek_server_web
