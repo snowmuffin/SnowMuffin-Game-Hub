@@ -411,17 +411,17 @@ app.post('/api/auth/validation', (req, res) => {
 
   if (!token) {
     logger.warn('Token not provided.');
-    return res.status(403).json({ status: 403, message: 'Invalid Token' });
+    return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
   }
 
   jwt.verify(token, secretKey, (err, decoded) => {
     if (err) {
       if (err.name === 'TokenExpiredError') {
         logger.warn('Token has expired.');
-        return res.status(403).json({ status: 403, message: 'Invalid Token' });
+        return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
       }
       logger.warn('Invalid token.');
-      return res.status(403).json({ status: 403, message: 'Invalid Token' });
+      return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
     }
 
     // If the token is valid, return user information with token in header
@@ -429,7 +429,7 @@ app.post('/api/auth/validation', (req, res) => {
     res.setHeader('Authorization', `Bearer ${token}`);
     res.status(200).json({
       status: 200,
-      message: 'Token is valid'
+      statusText: 'Token is valid'
     });
   });
 });
