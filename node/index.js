@@ -7,13 +7,18 @@ const SteamStrategy = require('passport-steam').Strategy;
 const mysql = require('mysql2');
 const jwt = require('jsonwebtoken');
 const logger = require('./logger'); // 로거 불러오기
+const cors = require('cors');
 
 // Express 앱 생성
 const app = express();
 
 // JSON 파싱 미들웨어 설정
 app.use(express.json());
-
+const corsOptions = {
+  origin: 'https://test.snowmuffingame.com', // 허용할 도메인
+  credentials: true // 인증 정보 포함
+};
+app.use(cors(corsOptions));
 // Session 설정
 app.use(session({
   secret: process.env.SESSION_SECRET || 'my_super_secret_key_12345',  // 환경 변수로 비밀 키 설정
@@ -150,10 +155,7 @@ app.get(
 );
 
 
-function generateToken(steamId) {
-  const payload = { steamId };
-  return jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' }); // 토큰 만료 시간 설정
-}
+
 app.post('/api/auth/getUserData', (req, res) => {
   if (req.isAuthenticated()) {
     const steamId = req.body.steamId;
@@ -177,13 +179,12 @@ app.post('/api/auth/getUserData', (req, res) => {
       }
 
       if (results.length > 0) {
-        // 토큰 생성 (예: JWT 사용) 후 본문에 추가
-        const token = generateToken(steamId); // 예: 토큰 생성 함수
+
         res.status(200).json({ 
           status: 200, 
           statusText: 'ok', 
-          userdata: results[0],
-          token: token // 응답 본문에 토큰 포함
+          userData: results[0],
+
         });
       }  else {
         logger.info(`Steam ID ${steamId}에 대한 데이터가 존재하지 않습니다.`);
