@@ -16,7 +16,6 @@ app.use(express.json());
 
 // CORS settings
 const corsOptions = {
-  credentials: true // 인증 정보 포함
   origin: 'https://test.snowmuffingame.com', // Allowed domain
   credentials: true // Include credentials
 };
