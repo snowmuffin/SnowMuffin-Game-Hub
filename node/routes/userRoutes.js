@@ -1,0 +1,14 @@
+// routes/userRoutes.js
+
+const express = require('express');
+const router = express.Router();
+const userController = require('../controllers/userController');
+const verifyUser = require('../middleware/verifyUser');
+
+// Example route to get user profile
+router.get('/:steamid/profile', verifyUser, userController.getUserProfile);
+
+// Example route to update user profile
+router.put('/:steamid/profile', verifyUser, userController.updateUserProfile);
+
+module.exports = router;
