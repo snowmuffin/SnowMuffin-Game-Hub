@@ -78,7 +78,7 @@ exports.getUserData = (req, res) => {
       const token = jwt.sign(
         { steamId: steamId, data: results[0] },
         secretKey,
-        { expiresIn: '1s' }
+        { expiresIn: '2h' }
       );
 
       res.setHeader('Authorization', `Bearer ${token}`);
@@ -89,7 +89,7 @@ exports.getUserData = (req, res) => {
       });
     } else {
       logger.info(`No data found for Steam ID ${steamId}.`);
-      res.status(404).json({ status: 404, statusText: 'Data does not exist.', data: null });
+      res.status(404).json({ status: 404, statusText: 'Data does not exist.'});
     }
   });
 };
