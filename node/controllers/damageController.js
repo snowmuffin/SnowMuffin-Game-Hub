@@ -58,7 +58,7 @@ exports.postDamageLogs = async (req, res) => {
       const sekCoinToAdd = damage / 10;
 
       return new Promise((resolve, reject) => {
-        db.connection.query(damage_event, [steam_id, damage, sekCoinToAdd], (err) => {
+        db.pool.query(damage_event, [steam_id, damage, sekCoinToAdd], (err) => {
           if (err) {
             logger.error(`Error saving damage log for Steam ID ${steam_id}: ${err.message}`);
             return reject(err);
@@ -66,7 +66,7 @@ exports.postDamageLogs = async (req, res) => {
           logger.info(`Successfully saved damage ${damage} and sek_coin ${sekCoinToAdd} for Steam ID ${steam_id}.`);
 
           if (droppedItem) {
-            db.connection.query(updateOnlineStorageQuery, [steam_id], (storageErr) => {
+            db.pool.query(updateOnlineStorageQuery, [steam_id], (storageErr) => {
               if (storageErr) {
                 logger.error(`Error updating online storage for Steam ID ${steam_id}, Item: ${droppedItem}: ${storageErr.message}`);
                 return reject(storageErr);
@@ -97,7 +97,7 @@ exports.getDamage = (req, res) => {
   const query = 'SELECT * FROM damage_logs WHERE steam_id = ?';
   logger.debug(`Executing SQL Query: ${query} with Steam ID: ${steamId}`);
 
-  db.connection.query(query, [steamId], (err, results) => {
+  db.pool.query(query, [steamId], (err, results) => {
     if (err) {
       logger.error(`Error fetching damage data for Steam ID ${steamId}: ${err.message}`);
       return res.status(500).json({ error: 'Database error' });

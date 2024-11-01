@@ -68,7 +68,7 @@ exports.getUserData = (req, res) => {
   const query = 'SELECT * FROM user_data WHERE steam_id = ?';
   logger.debug(`Executing SQL query: ${query} with Steam ID: ${steamId}`);
 
-  db.connection.query(query, [steamId], (err, results) => {
+  db.pool.query(query, [steamId], (err, results) => {
     if (err) {
       logger.error(`Error fetching user data for Steam ID ${steamId}: ${err.message}`);
       return res.status(500).json({ error: 'Database error' });
@@ -95,38 +95,54 @@ exports.getUserData = (req, res) => {
 };
 
 exports.validateToken = (req, res) => {
-    const authHeader = req.headers.authorization;
-  
-    if (!authHeader) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
       logger.warn('Token not provided.');
       return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
-    }
-  
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+  }
+
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
       logger.warn('Token format is invalid.');
       return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
-    }
-  
-    const token = parts[1];
-  
-    jwt.verify(token, secretKey, (err, decoded) => {
+  }
+
+  const token = parts[1];
+
+  jwt.verify(token, secretKey, (err, decoded) => {
       if (err) {
-        if (err.name === 'TokenExpiredError') {
-          logger.warn('Token has expired.');
+          if (err.name === 'TokenExpiredError') {
+              logger.warn('Token has expired.');
+              return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
+          }
+          logger.warn('Invalid token.');
           return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
-        }
-        logger.warn('Invalid token.');
-        return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
       }
-  
-      // 토큰이 유효한 경우 요청에 사용자 정보 추가
-      req.user = decoded;
-      logger.info(`Valid token. Steam ID: ${decoded.steamId}`);
-      res.status(200).json({
-        status: 200,
-        statusText: 'Token is valid'
+
+      // 토큰이 유효한 경우 user_data에서 유저 정보를 조회
+      const steamId = decoded.steamId;
+      const query = 'SELECT * FROM user_data WHERE steam_id = ?';
+
+      db.pool.query(query, [steamId], (dbErr, results) => {
+          if (dbErr) {
+              logger.error(`Database error while fetching user data for Steam ID ${steamId}: ${dbErr.message}`);
+              return res.status(500).json({ error: 'Database error' });
+          }
+
+          if (results.length === 0) {
+              logger.warn(`No user data found for Steam ID ${steamId}`);
+              return res.status(404).json({ status: 404, statusText: 'User not found' });
+          }
+
+          // 유저 정보를 성공적으로 조회한 경우
+          const userData = results[0];
+          logger.info(`User data retrieved for Steam ID ${steamId}`);
+          res.status(200).json({
+              status: 200,
+              statusText: 'Token is valid',
+              userData: userData
+          });
       });
-    });
-  };
-  
+  });
+};

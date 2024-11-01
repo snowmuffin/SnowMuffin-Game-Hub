@@ -1,18 +1,19 @@
 const mysql = require('mysql2');
 const logger = require('../utils/logger');
 
-const connection = mysql.createConnection({
+const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   supportBigNumbers: true,
-  bigNumberStrings: true
+  bigNumberStrings: true,
+  connectionLimit: 10 // 풀의 최대 연결 수 (필요에 따라 조정 가능)
 });
 
-connection.connect((err) => {
+pool.getConnection((err) => {
   if (err) {
-    logger.error(`MySQL connection error: ${err.message}`);
+    logger.error(`MySQL pool error: ${err.message}`);
     return;
   }
   logger.info('Successfully connected to MySQL.');
@@ -152,7 +153,7 @@ connection.connect((err) => {
     );
   `;
 
-  connection.query(createUserTable, (err) => {
+  pool.query(createUserTable, (err) => {
     if (err) {
       logger.error(`Error creating user_data table: ${err.message}`);
       return;
@@ -160,7 +161,7 @@ connection.connect((err) => {
     logger.info('user_data table has been verified or successfully created.');
   });
 
-  connection.query(createOnlineStorageTable, (err) => {
+  pool.query(createOnlineStorageTable, (err) => {
     if (err) {
       logger.error(`Error creating online_storage table: ${err.message}`);
       return;
@@ -171,7 +172,7 @@ connection.connect((err) => {
 
 // Function to close connection
 function endConnection(callback) {
-  connection.end((err) => {
+  pool.end((err) => {
     if (err) {
       logger.error(`Error closing MySQL connection: ${err.message}`);
     } else {
@@ -182,6 +183,6 @@ function endConnection(callback) {
 }
 
 module.exports = {
-  connection,
+  pool,
   endConnection
 };

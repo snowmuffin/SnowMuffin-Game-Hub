@@ -65,10 +65,14 @@ app.listen(PORT, () => {
   logger.info(`Server is running at http://${HOST}:${PORT}`);
 });
 
-// Gracefully close MySQL connection on server shutdown
+// Gracefully close MySQL connection pool on server shutdown
 process.on('SIGINT', () => {
-  db.endConnection(() => {
-    logger.info('MySQL connection closed successfully.');
-    process.exit();
+  pool.end((err) => {
+    if (err) {
+      logger.error('Error closing MySQL connection pool:', err);
+    } else {
+      logger.info('MySQL connection pool closed successfully.');
+    }
+    process.exit(err ? 1 : 0); // 종료 코드: 에러 시 1, 정상 종료 시 0
   });
 });
