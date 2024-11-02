@@ -1,7 +1,9 @@
-// controllers/userController.js
-
 const db = require('../config/database');
 const logger = require('../utils/logger');
+
+const sendResponse = (res, status, statustext, data) => {
+  res.status(status).json({ status, statustext, data });
+};
 
 /**
  * Get User Profile
@@ -15,13 +17,13 @@ exports.getUserProfile = (req, res) => {
   db.pool.query(query, [steamId], (err, results) => {
     if (err) {
       logger.error(`Error fetching user profile: ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
+      return sendResponse(res, 500, 'Database Error', { error: err.message });
     }
 
     if (results.length > 0) {
-      res.json({ steamid: steamId, profile: results[0] });
+      sendResponse(res, 200, 'Success', { steamid: steamId, profile: results[0] });
     } else {
-      res.status(404).json({ error: 'User not found' });
+      sendResponse(res, 404, 'User Not Found', { error: 'User not found' });
     }
   });
 };
@@ -35,30 +37,33 @@ exports.updateUserProfile = (req, res) => {
   const { nickname } = req.body;
 
   if (!nickname) {
-    return res.status(400).json({ error: 'Nickname is required' });
+    return sendResponse(res, 400, 'Invalid Request', { error: 'Nickname is required' });
   }
 
   const query = 'UPDATE user_data SET nickname = ? WHERE steam_id = ?';
   db.pool.query(query, [nickname, steamId], (err, results) => {
     if (err) {
       logger.error(`Error updating user profile: ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
+      return sendResponse(res, 500, 'Database Error', { error: err.message });
     }
 
     if (results.affectedRows > 0) {
-      res.json({ message: 'Profile updated successfully' });
+      sendResponse(res, 200, 'Success', { message: 'Profile updated successfully' });
     } else {
-      res.status(404).json({ error: 'User not found' });
+      sendResponse(res, 404, 'User Not Found', { error: 'User not found' });
     }
   });
 };
 
-
+/**
+ * Update User Data and Check Storage
+ * POST /api/user/updateuserdb
+ */
 exports.updateuserdb = (req, res) => {
   const { steamid, nickname } = req.body;
 
   if (!nickname) {
-    return res.status(400).json({ error: 'Nickname is required' });
+    return sendResponse(res, 400, 'Invalid Request', { error: 'Nickname is required' });
   }
 
   const updateUserQuery = 'UPDATE user_data SET nickname = ? WHERE steam_id = ?';
@@ -66,48 +71,41 @@ exports.updateuserdb = (req, res) => {
   const checkStorageQuery = 'SELECT 1 FROM online_storage WHERE steam_id = ?';
   const insertStorageQuery = 'INSERT INTO online_storage (steam_id) VALUES (?)';
 
-  // 첫 번째 쿼리: user_data 업데이트 시도
   db.pool.query(updateUserQuery, [nickname, steamid], (err, results) => {
     if (err) {
       logger.error(`Error updating user profile: ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
+      return sendResponse(res, 500, 'Database Error', { error: err.message });
     }
 
     if (results.affectedRows > 0) {
-      // user_data 업데이트 성공 시 online_storage 확인 및 삽입 시도
-      return checkAndInsertStorage(steamid, res);
+      return checkAndInsertStorage(steamid, res, 'Profile updated successfully');
     } else {
-      // user_data에 사용자 레코드가 없는 경우 삽입
       db.pool.query(insertUserQuery, [steamid, nickname], (err, results) => {
         if (err) {
           logger.error(`Error inserting into user_data: ${err.message}`);
-          return res.status(500).json({ error: 'Database error' });
+          return sendResponse(res, 500, 'Database Error', { error: err.message });
         }
-        // user_data 삽입 성공 후 online_storage 확인 및 삽입 시도
-        checkAndInsertStorage(steamid, res);
+        checkAndInsertStorage(steamid, res, 'Profile created and storage checked');
       });
     }
   });
 
-  // online_storage에 steam_id가 없을 경우 새 레코드 삽입
-  function checkAndInsertStorage(steamid, res) {
+  function checkAndInsertStorage(steamid, res, successMessage) {
     db.pool.query(checkStorageQuery, [steamid], (err, results) => {
       if (err) {
         logger.error(`Error checking online_storage: ${err.message}`);
-        return res.status(500).json({ error: 'Database error' });
+        return sendResponse(res, 500, 'Database Error', { error: err.message });
       }
 
       if (results.length > 0) {
-        // 레코드가 이미 있는 경우
-        return res.json({ message: 'Profile updated successfully' });
+        sendResponse(res, 200, 'Success', { message: successMessage });
       } else {
-        // 레코드가 없는 경우 새 레코드 삽입
         db.pool.query(insertStorageQuery, [steamid], (err, results) => {
           if (err) {
             logger.error(`Error inserting into online_storage: ${err.message}`);
-            return res.status(500).json({ error: 'Database error' });
+            return sendResponse(res, 500, 'Database Error', { error: err.message });
           }
-          return res.json({ message: 'Profile updated and storage record created' });
+          sendResponse(res, 200, 'Success', { message: `${successMessage} and storage record created` });
         });
       }
     });

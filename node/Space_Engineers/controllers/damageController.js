@@ -1,18 +1,21 @@
 const db = require('../config/database');
 const logger = require('../utils/logger');
-const jwt = require('jsonwebtoken');
-const { getDrop, dropTable } = require('../utils/dropUtils');
+const { getDrop } = require('../utils/dropUtils');
 
-const secretKey = process.env.JWT_SECRET || 'defaultSecretKey';
+const sendResponse = (res, status, statustext, data) => {
+  res.status(status).json({ status, statustext, data });
+};
 
-// Function to handle POST /api/damage_logs
+/**
+ * Handle POST /api/damage_logs
+ */
 exports.postDamageLogs = async (req, res) => {
   const damageLogs = req.body;
   logger.info(`Received damage logs: ${JSON.stringify(damageLogs)}`);
 
   if (!Array.isArray(damageLogs) || damageLogs.length === 0) {
     logger.warn('Invalid damage log data received.');
-    return res.status(400).json({ error: 'Invalid data' });
+    return sendResponse(res, 400, 'Invalid Data', { error: 'Invalid data' });
   }
 
   try {
@@ -46,14 +49,13 @@ exports.postDamageLogs = async (req, res) => {
           sek_coin = sek_coin + VALUES(sek_coin);
       `;
 
-      let updateOnlineStorageQuery = null;
-      if (droppedItem) {
-        updateOnlineStorageQuery = `
+      const updateOnlineStorageQuery = droppedItem
+        ? `
           INSERT INTO online_storage (steam_id, \`${droppedItem}\`)
           VALUES (?, 1)
           ON DUPLICATE KEY UPDATE \`${droppedItem}\` = \`${droppedItem}\` + 1;
-        `;
-      }
+        `
+        : null;
 
       const sekCoinToAdd = damage / 10;
 
@@ -82,14 +84,16 @@ exports.postDamageLogs = async (req, res) => {
     }));
 
     logger.info('Damage logs and coin balances updated successfully.');
-    res.send('Damage logs and coin balances updated successfully');
+    sendResponse(res, 200, 'Success', { message: 'Damage logs and coin balances updated successfully' });
   } catch (err) {
     logger.error(`Error processing damage logs and updating coin balances: ${err.message}`);
-    res.status(500).json({ error: 'Failed to process damage logs and update coin balances' });
+    sendResponse(res, 500, 'Processing Error', { error: 'Failed to process damage logs and update coin balances' });
   }
 };
 
-// Function to handle GET /api/damage/:steamid
+/**
+ * Handle GET /api/damage/:steamid
+ */
 exports.getDamage = (req, res) => {
   const steamId = req.params.steamid;
   logger.info(`Received request for damage data. Steam ID: ${steamId}`);
@@ -100,7 +104,7 @@ exports.getDamage = (req, res) => {
   db.pool.query(query, [steamId], (err, results) => {
     if (err) {
       logger.error(`Error fetching damage data for Steam ID ${steamId}: ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
+      return sendResponse(res, 500, 'Database Error', { error: 'Database error' });
     }
 
     logger.debug(`Query Results for Steam ID ${steamId}: ${JSON.stringify(results)}`);
@@ -108,10 +112,10 @@ exports.getDamage = (req, res) => {
     if (results.length > 0) {
       const totalDamage = results[0].total_damage;
       logger.info(`Total damage for Steam ID ${steamId}: ${totalDamage}`);
-      res.json({ steamid: steamId, totalDamage });
+      sendResponse(res, 200, 'Success', { steamid: steamId, totalDamage });
     } else {
       logger.info(`No damage data found for Steam ID ${steamId}. Returning totalDamage: 0`);
-      res.json({ steamid: steamId, totalDamage: 0 });
+      sendResponse(res, 200, 'No Data', { steamid: steamId, totalDamage: 0 });
     }
   });
 };

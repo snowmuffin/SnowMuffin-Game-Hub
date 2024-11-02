@@ -4,17 +4,21 @@ const db = require('../config/database');
 
 const secretKey = process.env.JWT_SECRET || 'defaultSecretKey';
 
+const sendResponse = (res, status, statusText, data) => {
+  res.status(status).json({ status, statusText, data });
+};
+
 // Function to handle Steam callback
 exports.steamCallback = (req, res) => {
   if (req.user) {
-    const userData = JSON.stringify({
+    const userData = {
       user: {
         steamId: req.user.id,
         displayName: req.user.displayName,
         profileUrl: req.user._json.profileurl,
-        avatar: req.user._json.avatar
-      }
-    });
+        avatar: req.user._json.avatar,
+      },
+    };
 
     logger.info(`Steam authentication successful for Steam ID: ${req.user.id}`);
 
@@ -22,7 +26,7 @@ exports.steamCallback = (req, res) => {
       <script>
         if (window.opener) {
           window.opener.postMessage(
-            { status: 200, statusText: 'OK', data: ${userData} },
+            { status: 200, statusText: 'OK', data: ${JSON.stringify(userData)} },
             '*'
           );
           window.close();
@@ -54,14 +58,14 @@ exports.steamCallback = (req, res) => {
 exports.getUserData = (req, res) => {
   if (!req.isAuthenticated()) {
     logger.info('An unauthenticated user attempted to request data.');
-    return res.status(401).json({ error: 'Authentication is required.' });
+    return sendResponse(res, 401, 'Unauthorized', { error: 'Authentication is required.' });
   }
 
   const steamId = req.body.steamId;
 
   if (!steamId) {
     logger.warn('Steam ID was not provided.');
-    return res.status(400).json({ error: 'Steam ID is required.' });
+    return sendResponse(res, 400, 'Bad Request', { error: 'Steam ID is required.' });
   }
 
   logger.info(`Data request received. Steam ID: ${steamId}`);
@@ -71,7 +75,7 @@ exports.getUserData = (req, res) => {
   db.pool.query(query, [steamId], (err, results) => {
     if (err) {
       logger.error(`Error fetching user data for Steam ID ${steamId}: ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
+      return sendResponse(res, 500, 'Database Error', { error: 'Database error' });
     }
 
     if (results.length > 0) {
@@ -82,67 +86,55 @@ exports.getUserData = (req, res) => {
       );
 
       res.setHeader('Authorization', `Bearer ${token}`);
-      res.status(200).json({
-        status: 200,
-        statusText: 'ok',
-        userData: results[0]
-      });
+      sendResponse(res, 200, 'OK', { userData: results[0] });
     } else {
       logger.info(`No data found for Steam ID ${steamId}.`);
-      res.status(404).json({ status: 404, statusText: 'Data does not exist.'});
+      sendResponse(res, 404, 'Not Found', { error: 'Data does not exist.' });
     }
   });
 };
 
+// Function to validate token
 exports.validateToken = (req, res) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-      logger.warn('Token not provided.');
-      return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
+    logger.warn('Token not provided.');
+    return sendResponse(res, 403, 'Forbidden', { error: 'Invalid Token' });
   }
 
   const parts = authHeader.split(' ');
   if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      logger.warn('Token format is invalid.');
-      return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
+    logger.warn('Token format is invalid.');
+    return sendResponse(res, 403, 'Forbidden', { error: 'Invalid Token' });
   }
 
   const token = parts[1];
 
   jwt.verify(token, secretKey, (err, decoded) => {
-      if (err) {
-          if (err.name === 'TokenExpiredError') {
-              logger.warn('Token has expired.');
-              return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
-          }
-          logger.warn('Invalid token.');
-          return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
+    if (err) {
+      const errorMsg = err.name === 'TokenExpiredError' ? 'Token has expired.' : 'Invalid token.';
+      logger.warn(errorMsg);
+      return sendResponse(res, 403, 'Forbidden', { error: errorMsg });
+    }
+
+    const steamId = decoded.steamId;
+    const query = 'SELECT * FROM user_data WHERE steam_id = ?';
+
+    db.pool.query(query, [steamId], (dbErr, results) => {
+      if (dbErr) {
+        logger.error(`Database error while fetching user data for Steam ID ${steamId}: ${dbErr.message}`);
+        return sendResponse(res, 500, 'Database Error', { error: 'Database error' });
       }
 
-      // 토큰이 유효한 경우 user_data에서 유저 정보를 조회
-      const steamId = decoded.steamId;
-      const query = 'SELECT * FROM user_data WHERE steam_id = ?';
+      if (results.length === 0) {
+        logger.warn(`No user data found for Steam ID ${steamId}`);
+        return sendResponse(res, 404, 'Not Found', { error: 'User not found' });
+      }
 
-      db.pool.query(query, [steamId], (dbErr, results) => {
-          if (dbErr) {
-              logger.error(`Database error while fetching user data for Steam ID ${steamId}: ${dbErr.message}`);
-              return res.status(500).json({ error: 'Database error' });
-          }
-
-          if (results.length === 0) {
-              logger.warn(`No user data found for Steam ID ${steamId}`);
-              return res.status(404).json({ status: 404, statusText: 'User not found' });
-          }
-
-          // 유저 정보를 성공적으로 조회한 경우
-          const userData = results[0];
-          logger.info(`User data retrieved for Steam ID ${steamId}`);
-          res.status(200).json({
-              status: 200,
-              statusText: 'Token is valid',
-              userData: userData
-          });
-      });
+      const userData = results[0];
+      logger.info(`User data retrieved for Steam ID ${steamId}`);
+      sendResponse(res, 200, 'OK', { userData });
+    });
   });
 };

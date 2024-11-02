@@ -1,6 +1,10 @@
 const db = require('../config/database');
 const logger = require('../utils/logger');
 
+const sendResponse = (res, status, statustext, data) => {
+  res.status(status).json({ status, statustext, data });
+};
+
 exports.getResources = (req, res) => {
   const steamId = req.params.steamid;
   logger.info(`Received request for resources. Steam ID: ${steamId}`);
@@ -11,12 +15,18 @@ exports.getResources = (req, res) => {
   db.pool.query(query, [steamId], (err, results) => {
     if (err) {
       logger.error(`Error fetching resource data for Steam ID ${steamId}: ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
+      return sendResponse(res, 500, 'Database error', { error: err.message });
     }
 
     if (results.length > 0) {
-      logger.info(`Resources retrieved for Steam ID ${steamId}: ${JSON.stringify(results[0])}`);
-      res.json({ steamid: steamId, resources: results[0] });
+      const filteredResources = {};
+      for (const [key, value] of Object.entries(results[0])) {
+        if (value > 0 && key !== 'steam_id') {
+          filteredResources[key] = value;
+        }
+      }
+      logger.info(`Resources retrieved for Steam ID ${steamId}: ${JSON.stringify(filteredResources)}`);
+      sendResponse(res, 200, 'Success', { steamid: steamId, resources: filteredResources });
     } else {
       const insertQuery = 'INSERT INTO online_storage (steam_id) VALUES (?)';
       logger.info(`No resources found for Steam ID ${steamId}. Inserting new row.`);
@@ -24,98 +34,88 @@ exports.getResources = (req, res) => {
       db.pool.query(insertQuery, [steamId], (insertErr) => {
         if (insertErr) {
           logger.error(`Error inserting new row for Steam ID ${steamId}: ${insertErr.message}`);
-          return res.status(500).json({ error: 'Error inserting new row' });
+          return sendResponse(res, 500, 'Error inserting new row', { error: insertErr.message });
         }
 
         logger.info(`New row added. Steam ID: ${steamId}`);
-        res.json({ steamid: steamId, resources: {} });
+        sendResponse(res, 200, 'Success', { steamid: steamId, resources: {} });
       });
     }
   });
 };
+
 exports.download = (req, res) => {
-    const { steamid, itemName, quantity } = req.body;
+  const { steamid, itemName, quantity } = req.body;
+  logger.info(`Download request received: Steam ID=${steamid}, Item=${itemName}, Quantity=${quantity}`);
 
-    console.log(`Download request received: Steam ID=${steamid}, Item=${itemName}, Quantity=${quantity}`);
+  if (!itemName || !quantity || quantity <= 0) {
+    return sendResponse(res, 400, 'Invalid Request', { error: 'Invalid item name or quantity' });
+  }
 
-    // 유효성 검사
-    if (!itemName || !quantity || quantity <= 0) {
-        return res.status(400).json({ error: 'Invalid item name or quantity' });
+  const query = `SELECT ?? AS availableQuantity FROM online_storage WHERE steam_id = ?`;
+  db.pool.query(query, [itemName, steamid], (err, results) => {
+    if (err) {
+      logger.error(`Error fetching resource data for Steam ID ${steamid}: ${err.message}`);
+      return sendResponse(res, 500, 'Database error', { error: err.message });
     }
 
-    // 아이템 조회 쿼리: itemName을 동적으로 열 이름으로 사용
-    const query = `SELECT ?? AS availableQuantity FROM online_storage WHERE steam_id = ?`;
-    db.pool.query(query, [itemName, steamid], (err, results) => {
-        if (err) {
-            logger.error(`Error fetching resource data for Steam ID ${steamid}: ${err.message}`);
-            return res.status(500).json({ error: 'Database error' });
-        }
+    if (results.length === 0 || results[0].availableQuantity === undefined) {
+      return sendResponse(res, 404, 'Item Not Found', { Exist: false, message: "Item not found in online storage." });
+    }
 
-        // 조회 결과가 없을 경우
-        if (results.length === 0 || results[0].availableQuantity === undefined) {
-            return res.status(404).json({ Exist: false, message: "Item not found in online storage." });
-        }
+    const availableQuantity = results[0].availableQuantity;
+    if (availableQuantity < quantity) {
+      return sendResponse(res, 200, 'Insufficient Quantity', {
+        Exist: true,
+        quantity: availableQuantity,
+        message: `Insufficient quantity. Available: ${availableQuantity}`
+      });
+    }
 
-        // 조회된 수량 확인
-        const availableQuantity = results[0].availableQuantity;
-        if (availableQuantity < quantity) {
-            return res.status(200).json({
-                Exist: true,
-                quantity: availableQuantity,
-                message: `Insufficient quantity. Available: ${availableQuantity}`
-            });
-        }
+    const updateQuery = `UPDATE online_storage SET ?? = ?? - ? WHERE steam_id = ?`;
+    db.pool.query(updateQuery, [itemName, itemName, quantity, steamid], (updateErr) => {
+      if (updateErr) {
+        logger.error(`Error updating resource data for Steam ID ${steamid}: ${updateErr.message}`);
+        return sendResponse(res, 500, 'Update Error', { error: 'Failed to update item quantity in online storage.' });
+      }
 
-        // 수량이 충분할 경우, 데이터베이스에서 차감하는 쿼리 실행
-        const updateQuery = `UPDATE online_storage SET ?? = ?? - ? WHERE steam_id = ?`;
-        db.pool.query(updateQuery, [itemName, itemName, quantity, steamid], (updateErr) => {
-            if (updateErr) {
-                logger.error(`Error updating resource data for Steam ID ${steamid}: ${updateErr.message}`);
-                return res.status(500).json({ error: 'Failed to update item quantity in online storage.' });
-            }
-
-            // 성공 응답 반환
-            res.status(200).json({
-                Exist: true,
-                quantity: availableQuantity,
-                message: `${quantity}x '${itemName}' has been downloaded and deducted from your storage.`
-            });
-        });
+      sendResponse(res, 200, 'Success', {
+        Exist: true,
+        quantity: availableQuantity,
+        message: `${quantity}x '${itemName}' has been downloaded and deducted from your storage.`
+      });
     });
+  });
 };
 
 exports.upload = (req, res) => {
   const { steamid, itemName, quantity } = req.body;
-  console.log(`Upload request received: Steam ID=${steamid}, Item=${itemName}, Quantity=${quantity}`);
+  logger.info(`Upload request received: Steam ID=${steamid}, Item=${itemName}, Quantity=${quantity}`);
   
   if (!itemName || !quantity || quantity <= 0) {
-    return res.status(400).json({ error: 'Invalid item name or quantity' });
+    return sendResponse(res, 400, 'Invalid Request', { error: 'Invalid item name or quantity' });
   }
 
-  // 스팀 ID와 아이템이 있는지 확인하는 쿼리
   const checkQuery = `SELECT ?? AS availableQuantity, sek_coin FROM online_storage AS os JOIN user_data AS ud ON os.steam_id = ud.steam_id WHERE os.steam_id = ?`;
   db.pool.query(checkQuery, [itemName, steamid], (err, results) => {
     if (err) {
       logger.error(`Error checking resource data for Steam ID ${steamid}: ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
+      return sendResponse(res, 500, 'Database error', { error: err.message });
     }
 
-    // 해당 스팀 ID 행이 없는 경우
     if (results.length === 0) {
-      return res.status(404).json({ Exist: false, message: "Steam ID not found in online storage." });
+      return sendResponse(res, 404, 'Steam ID Not Found', { Exist: false, message: "Steam ID not found in online storage." });
     }
 
-    // 해당 아이템이 존재하지 않는 경우
     if (results[0].availableQuantity === undefined) {
-      return res.status(404).json({ Exist: false, message: "Item not found in online storage." });
+      return sendResponse(res, 404, 'Item Not Found', { Exist: false, message: "Item not found in online storage." });
     }
 
-    // 잔고 확인
     const availableQuantity = results[0].availableQuantity;
     const currentCoin = results[0].sek_coin;
     
     if (currentCoin < quantity) {
-      return res.status(400).json({ 
+      return sendResponse(res, 400, 'Insufficient Balance', {
         error: 'Insufficient sek_coin balance.',
         currentCoin,
         requiredAmount: quantity,
@@ -123,7 +123,6 @@ exports.upload = (req, res) => {
       });
     }
 
-    // 온라인 스토리지에 수량을 추가하고 sek_coin을 업데이트하는 쿼리
     const updateQuery = `UPDATE online_storage AS os
                          JOIN user_data AS ud ON os.steam_id = ud.steam_id
                          SET os.?? = os.?? + ?, ud.sek_coin = ud.sek_coin - ?
@@ -131,11 +130,10 @@ exports.upload = (req, res) => {
     db.pool.query(updateQuery, [itemName, itemName, quantity, quantity, steamid], (updateErr) => {
       if (updateErr) {
         logger.error(`Error updating resource data for Steam ID ${steamid}: ${updateErr.message}`);
-        return res.status(500).json({ error: 'Failed to update item quantity in online storage.' });
+        return sendResponse(res, 500, 'Update Error', { error: 'Failed to update item quantity in online storage.' });
       }
 
-      // 성공 응답 반환
-      res.status(200).json({
+      sendResponse(res, 200, 'Success', {
         Exist: true,
         quantity: availableQuantity + quantity,
         remainingCoins: currentCoin - quantity,
