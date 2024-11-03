@@ -152,7 +152,25 @@ pool.getConnection((err) => {
       PRIMARY KEY (steam_id)
     );
   `;
-
+  // marketplace_items 테이블 생성 (id 컬럼 추가)
+  const createMarketplaceItemsTable = `
+    CREATE TABLE IF NOT EXISTS marketplace_items (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      steam_id BIGINT NOT NULL,
+      item_name VARCHAR(255) NOT NULL,
+      quantity DECIMAL(10,2),
+      price DECIMAL(10, 2) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (steam_id) REFERENCES user_data(steam_id)
+    );
+  `;
+  pool.query(createMarketplaceItemsTable, (err) => {
+    if (err) {
+      logger.error(`Error creating marketplace_items table: ${err.message}`);
+      return;
+    }
+    logger.info('marketplace_items table has been verified or successfully created.');
+  });
   pool.query(createUserTable, (err) => {
     if (err) {
       logger.error(`Error creating user_data table: ${err.message}`);

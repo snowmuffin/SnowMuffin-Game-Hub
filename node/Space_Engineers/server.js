@@ -12,7 +12,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
 const damageRoutes = require('./routes/damageRoutes');
-
+const tradeRoutes = require('./routes/tradeRoutes');
 const app = express();
 
 // Middleware to parse JSON
@@ -43,7 +43,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/damage_logs', damageRoutes);
-
+app.use('/api/trade',tradeRoutes)
 // Home route
 app.get('/', (req, res) => {
   const userStatus = req.user ? `Logged in as ${req.user.displayName}` : 'Not logged in';

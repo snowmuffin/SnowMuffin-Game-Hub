@@ -56,10 +56,7 @@ exports.steamCallback = (req, res) => {
 
 // Function to get user data
 exports.getUserData = (req, res) => {
-  if (!req.isAuthenticated()) {
-    logger.info('An unauthenticated user attempted to request data.');
-    return sendResponse(res, 401, 'Unauthorized', { error: 'Authentication is required.' });
-  }
+
 
   const steamId = req.body.steamId;
 
