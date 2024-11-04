@@ -5,7 +5,7 @@ const { generateToken, verifyToken } = require('../utils/jwt');
 const secretKey = process.env.JWT_SECRET || 'defaultSecretKey';
 
 const sendResponse = (res, status, statusText, data) => {
-  res.status(status).json({ status, statusText, data });
+  res.status(status).json({ status, statusText, userData:data });
 };
 
 // Function to handle Steam callback
@@ -73,7 +73,6 @@ exports.getUserData = async (req, res) => {
     const [results] = await db.pool.promise().query(query, [steamId]);
 
     if (results.length > 0) {
-      const userData = results[0];
       const token = jwt.sign(
         { steamId: steamId, data: results[0] },
         secretKey,
@@ -82,7 +81,7 @@ exports.getUserData = async (req, res) => {
 
       res.setHeader('Authorization', `Bearer ${token}`);
 
-      sendResponse(res, 200, 'OK', userData );
+      sendResponse(res, 200, 'OK', results[0] );
     } else {
       logger.info(`No data found for Steam ID ${steamId}.`);
       sendResponse(res, 404, 'Not Found', { error: 'Data does not exist.' });
@@ -132,10 +131,10 @@ exports.validateToken = async (req, res) => {
       return sendResponse(res, 404, 'Not Found', { error: 'User not found' });
     }
 
-    const userData = results[0];
+ 
     logger.info(`User data retrieved for Steam ID ${steamId}`);
 
-    sendResponse(res, 200, 'Token is valid', { userData });
+    sendResponse(res, 200, 'Token is valid', results[0]);
   } catch (err) {
     logger.error(`Error validating token: ${err.message}`);
     sendResponse(res, 500, 'Internal Server Error', { error: 'An unexpected error occurred' });
