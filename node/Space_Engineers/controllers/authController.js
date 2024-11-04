@@ -1,8 +1,12 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 const db = require('../config/database');
-
+const { generateToken, verifyToken } = require('../utils/jwt');
 const secretKey = process.env.JWT_SECRET || 'defaultSecretKey';
+
+const sendResponse = (res, status, statusText, data) => {
+  res.status(status).json({ status, statusText, data });
+};
 
 // Function to handle Steam callback
 exports.steamCallback = (req, res) => {
@@ -51,30 +55,25 @@ exports.steamCallback = (req, res) => {
 };
 
 // Function to get user data
-exports.getUserData = (req, res) => {
-  if (!req.isAuthenticated()) {
-    logger.info('An unauthenticated user attempted to request data.');
-    return res.status(401).json({ error: 'Authentication is required.' });
-  }
+exports.getUserData = async (req, res) => {
+  try {
+ 
 
-  const steamId = req.body.steamId;
+    const { steamId } = req.body;
 
-  if (!steamId) {
-    logger.warn('Steam ID was not provided.');
-    return res.status(400).json({ error: 'Steam ID is required.' });
-  }
-
-  logger.info(`Data request received. Steam ID: ${steamId}`);
-  const query = 'SELECT * FROM user_data WHERE steam_id = ?';
-  logger.debug(`Executing SQL query: ${query} with Steam ID: ${steamId}`);
-
-  db.pool.query(query, [steamId], (err, results) => {
-    if (err) {
-      logger.error(`Error fetching user data for Steam ID ${steamId}: ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
+    if (!steamId) {
+      logger.warn('Steam ID was not provided.');
+      return sendResponse(res, 400, 'Bad Request', { error: 'Steam ID is required.' });
     }
 
+    logger.info(`Data request received. Steam ID: ${steamId}`);
+    const query = 'SELECT * FROM user_data WHERE steam_id = ?';
+    logger.debug(`Executing SQL query: ${query} with Steam ID: ${steamId}`);
+
+    const [results] = await db.pool.promise().query(query, [steamId]);
+
     if (results.length > 0) {
+      const userData = results[0];
       const token = jwt.sign(
         { steamId: steamId, data: results[0] },
         secretKey,
@@ -82,67 +81,62 @@ exports.getUserData = (req, res) => {
       );
 
       res.setHeader('Authorization', `Bearer ${token}`);
-      res.status(200).json({
-        status: 200,
-        statusText: 'ok',
-        userData: results[0]
-      });
+
+      sendResponse(res, 200, 'OK', { userData });
     } else {
       logger.info(`No data found for Steam ID ${steamId}.`);
-      res.status(404).json({ status: 404, statusText: 'Data does not exist.'});
+      sendResponse(res, 404, 'Not Found', { error: 'Data does not exist.' });
     }
-  });
+  } catch (err) {
+    logger.error(`Error fetching user data for Steam ID ${req.body.steamId}: ${err.message}`);
+    sendResponse(res, 500, 'Internal Server Error', { error: 'Failed to fetch user data' });
+  }
 };
 
-exports.validateToken = (req, res) => {
-  const authHeader = req.headers.authorization;
+exports.validateToken = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
 
-  if (!authHeader) {
+    if (!authHeader) {
       logger.warn('Token not provided.');
-      return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
-  }
+      return sendResponse(res, 403, 'Forbidden', { error: 'Invalid Token' });
+    }
 
-  const parts = authHeader.split(' ');
-  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
       logger.warn('Token format is invalid.');
-      return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
-  }
+      return sendResponse(res, 403, 'Forbidden', { error: 'Invalid Token' });
+    }
 
-  const token = parts[1];
+    const token = parts[1];
+    let decoded;
 
-  jwt.verify(token, secretKey, (err, decoded) => {
-      if (err) {
-          if (err.name === 'TokenExpiredError') {
-              logger.warn('Token has expired.');
-              return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
-          }
-          logger.warn('Invalid token.');
-          return res.status(403).json({ status: 403, statusText: 'Invalid Token' });
+    try {
+      decoded = verifyToken(token);
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        logger.warn('Token has expired.');
+        return sendResponse(res, 403, 'Forbidden', { error: 'Invalid Token' });
       }
+      logger.warn('Invalid token.');
+      return sendResponse(res, 403, 'Forbidden', { error: 'Invalid Token' });
+    }
 
-      // 토큰이 유효한 경우 user_data에서 유저 정보를 조회
-      const steamId = decoded.steamId;
-      const query = 'SELECT * FROM user_data WHERE steam_id = ?';
+    const { steamId } = decoded;
+    const query = 'SELECT * FROM user_data WHERE steam_id = ?';
 
-      db.pool.query(query, [steamId], (dbErr, results) => {
-          if (dbErr) {
-              logger.error(`Database error while fetching user data for Steam ID ${steamId}: ${dbErr.message}`);
-              return res.status(500).json({ error: 'Database error' });
-          }
+    const [results] = await db.pool.promise().query(query, [steamId]);
 
-          if (results.length === 0) {
-              logger.warn(`No user data found for Steam ID ${steamId}`);
-              return res.status(404).json({ status: 404, statusText: 'User not found' });
-          }
+    if (results.length === 0) {
+      logger.warn(`No user data found for Steam ID ${steamId}`);
+      return sendResponse(res, 404, 'Not Found', { error: 'User not found' });
+    }
 
-          // 유저 정보를 성공적으로 조회한 경우
-          const userData = results[0];
-          logger.info(`User data retrieved for Steam ID ${steamId}`);
-          res.status(200).json({
-              status: 200,
-              statusText: 'Token is valid',
-              userData: userData
-          });
-      });
-  });
+    const userData = results[0];
+    logger.info(`User data retrieved for Steam ID ${steamId}`);
+
+    sendResponse(res, 200, 'Token is valid', { userData });
+  } catch (err) {
+    logger.error(`Error validating token: ${err.message}`);
+    sendResponse(res, 500, 'Internal Server Error', { error: 'An unexpected error occurred' });
+  }
 };

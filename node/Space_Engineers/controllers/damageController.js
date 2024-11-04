@@ -89,29 +89,3 @@ exports.postDamageLogs = async (req, res) => {
   }
 };
 
-// Function to handle GET /api/damage/:steamid
-exports.getDamage = (req, res) => {
-  const steamId = req.params.steamid;
-  logger.info(`Received request for damage data. Steam ID: ${steamId}`);
-
-  const query = 'SELECT * FROM damage_logs WHERE steam_id = ?';
-  logger.debug(`Executing SQL Query: ${query} with Steam ID: ${steamId}`);
-
-  db.pool.query(query, [steamId], (err, results) => {
-    if (err) {
-      logger.error(`Error fetching damage data for Steam ID ${steamId}: ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    logger.debug(`Query Results for Steam ID ${steamId}: ${JSON.stringify(results)}`);
-
-    if (results.length > 0) {
-      const totalDamage = results[0].total_damage;
-      logger.info(`Total damage for Steam ID ${steamId}: ${totalDamage}`);
-      res.json({ steamid: steamId, totalDamage });
-    } else {
-      logger.info(`No damage data found for Steam ID ${steamId}. Returning totalDamage: 0`);
-      res.json({ steamid: steamId, totalDamage: 0 });
-    }
-  });
-};

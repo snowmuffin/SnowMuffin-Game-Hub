@@ -8,7 +8,8 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   supportBigNumbers: true,
   bigNumberStrings: true,
-  connectionLimit: 10 // 풀의 최대 연결 수 (필요에 따라 조정 가능)
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
 pool.getConnection((err) => {
@@ -28,7 +29,18 @@ pool.getConnection((err) => {
       PRIMARY KEY (steam_id)
     );
   `;
-
+  const createMarketTable = `
+    CREATE TABLE IF NOT EXISTS marketplace_items (
+      id INT NOT NULL AUTO_INCREMENT,
+      seller_steam_id BIGINT NOT NULL,
+      seller_nickname VARCHAR(256) DEFAULT NULL,
+      item_name VARCHAR(256) NOT NULL,
+      price_per_unit BIGINT UNSIGNED NOT NULL,
+      quantity INT UNSIGNED NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id)
+    );
+  `;
   const createOnlineStorageTable = `
     CREATE TABLE IF NOT EXISTS online_storage (
       steam_id BIGINT NOT NULL,
@@ -152,6 +164,20 @@ pool.getConnection((err) => {
       PRIMARY KEY (steam_id)
     );
   `;
+  const createtradelogTable = `
+    CREATE TABLE IF NOT EXISTS tradelog (
+      id INT NOT NULL AUTO_INCREMENT,
+      seller_nickname VARCHAR(256) DEFAULT NULL,
+      seller_steam_id BIGINT NOT NULL,
+      buyer_steam_id BIGINT NOT NULL,
+      buyer_nickname VARCHAR(256) DEFAULT NULL,
+      item_name VARCHAR(256) NOT NULL,
+      price_per_unit BIGINT UNSIGNED NOT NULL,
+      quantity INT UNSIGNED NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id)
+    );
+  `;
 
   pool.query(createUserTable, (err) => {
     if (err) {
@@ -160,7 +186,20 @@ pool.getConnection((err) => {
     }
     logger.info('user_data table has been verified or successfully created.');
   });
-
+  pool.query(createMarketTable, (err) => {
+    if (err) {
+      logger.error(`Error creating marketplace_items table: ${err.message}`);
+      return;
+    }
+    logger.info('marketplace_items table has been verified or successfully created.');
+  });
+  pool.query(createtradelogTable, (err) => {
+    if (err) {
+      logger.error(`Error creating tradelog table: ${err.message}`);
+      return;
+    }
+    logger.info('tradelog table has been verified or successfully created.');
+  });
   pool.query(createOnlineStorageTable, (err) => {
     if (err) {
       logger.error(`Error creating online_storage table: ${err.message}`);

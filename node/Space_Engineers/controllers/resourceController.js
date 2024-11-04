@@ -2,7 +2,7 @@ const db = require('../config/database');
 const logger = require('../utils/logger');
 
 exports.getResources = (req, res) => {
-  const steamId = req.params.steamid;
+  const {steamId} = req.body;
   logger.info(`Received request for resources. Steam ID: ${steamId}`);
 
   const query = 'SELECT * FROM online_storage WHERE steam_id = ?';
