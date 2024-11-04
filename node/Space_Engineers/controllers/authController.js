@@ -82,7 +82,7 @@ exports.getUserData = async (req, res) => {
 
       res.setHeader('Authorization', `Bearer ${token}`);
 
-      sendResponse(res, 200, 'OK', { userData });
+      sendResponse(res, 200, 'OK', userData );
     } else {
       logger.info(`No data found for Steam ID ${steamId}.`);
       sendResponse(res, 404, 'Not Found', { error: 'Data does not exist.' });
