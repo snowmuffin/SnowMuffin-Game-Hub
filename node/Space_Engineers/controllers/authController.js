@@ -102,6 +102,7 @@ exports.validateToken = async (req, res) => {
       return sendResponse(res, 403, 'Forbidden', { error: 'Invalid Token' });
     }
 
+    const parts = authHeader.split(' ');
     if (parts.length !== 2 || parts[0] !== 'Bearer') {
       logger.warn('Token format is invalid.');
       return sendResponse(res, 403, 'Forbidden', { error: 'Invalid Token' });
