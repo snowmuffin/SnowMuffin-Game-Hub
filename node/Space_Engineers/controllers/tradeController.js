@@ -78,117 +78,216 @@ exports.getMarketplaceItems = [
 ];
 
 exports.purchaseItem = [
-  (req, res) => {
+  async (req, res) => { // 비동기 함수로 변경하여 코드 가독성 향상
     const { buyerSteamId, itemId, quantity } = req.body;
-    logger.info(`Purchase attempt initiated by Steam ID: ${buyerSteamId} for Item ID: ${itemId} with Quantity: ${quantity}`);
+    logger.info(`Purchase attempt initiated by Steam ID: ${buyerSteamId}`, {
+      itemId,
+      quantity,
+      timestamp: new Date().toISOString(),
+    });
     console.log("Purchase Request Body:", req.body);
-    if (!itemId) {
-      logger.warn(`Purchase failed: Item ID is missing. Buyer Steam ID: ${buyerSteamId}`);
-      return sendResponse(res, 400, 'Bad Request', { error: 'Item ID is required' });
+
+    // 입력값 검증
+    if (!itemId || !buyerSteamId || !quantity) {
+      logger.warn(`Purchase failed: Missing required fields`, {
+        buyerSteamId,
+        itemId,
+        quantity,
+        timestamp: new Date().toISOString(),
+      });
+      return sendResponse(res, 400, 'Bad Request', { error: 'buyerSteamId, itemId, and quantity are required' });
     }
 
-    // 트랜잭션 시작
-    db.pool.getConnection((err, connection) => {
-      if (err) {
-        logger.error(`Error getting database connection for Buyer Steam ID: ${buyerSteamId}, Error: ${err.message}`);
-        return sendResponse(res, 500, 'Database Error', { error: 'Database connection failed' });
-      }
-      logger.info(`Database connection acquired for Buyer Steam ID: ${buyerSteamId}`);
-
-      connection.beginTransaction(async (transErr) => {
-        if (transErr) {
-          connection.release();
-          logger.error(`Error starting transaction for Buyer Steam ID: ${buyerSteamId}, Error: ${transErr.message}`);
-          return sendResponse(res, 500, 'Database Error', { error: 'Transaction failed to start' });
-        }
-        logger.info(`Transaction started for Buyer Steam ID: ${buyerSteamId}`);
-
-        try {
-          // 1. 아이템 정보 조회 (수정 잠금)
-          logger.debug(`Fetching item details for Item ID: ${itemId}`);
-          const [itemRows] = await connection.promise().query('SELECT * FROM marketplace_items WHERE id = ? FOR UPDATE', [itemId]);
-
-          if (itemRows.length === 0) {
-            logger.warn(`Item not found: Item ID: ${itemId}, Buyer Steam ID: ${buyerSteamId}`);
-            throw new Error('Item not found');
-          }
-
-          const item = itemRows[0];
-          logger.info(`Item retrieved: ${JSON.stringify(item)} for Buyer Steam ID: ${buyerSteamId}`);
-
-          // 2. 구매자의 잔액 확인 (선택 사항)
-          logger.debug(`Checking balance for Buyer Steam ID: ${buyerSteamId}`);
-          const [userRows] = await connection.promise().query('SELECT sek_coin FROM user_data WHERE steam_id = ?', [buyerSteamId]);
-          if (userRows.length === 0) {
-            logger.warn(`User not found: Buyer Steam ID: ${buyerSteamId}`);
-            throw new Error('User not found');
-          }
-          const userBalance = userRows[0].sek_coin;
-          const totalPrice = item.price * quantity;
-          logger.info(`User Balance: ${userBalance}, Total Price: ${totalPrice} for Buyer Steam ID: ${buyerSteamId}`);
-
-          if (userBalance < totalPrice) {
-            logger.warn(`Insufficient balance: Buyer Steam ID: ${buyerSteamId}, Balance: ${userBalance}, Required: ${totalPrice}`);
-            throw new Error('Insufficient balance');
-          }
-
-          // 3. 수량 확인 및 업데이트
-          logger.debug(`Checking item quantity for Item ID: ${itemId}`);
-          if (item.quantity < quantity) {
-            logger.warn(`Insufficient item quantity: Item ID: ${itemId}, Available: ${item.quantity}, Requested: ${quantity}, Buyer Steam ID: ${buyerSteamId}`);
-            throw new Error('Insufficient item quantity');
-          }
-
-          // 수량을 줄이고, 남은 수량이 0이면 행을 삭제
-          if (item.quantity - quantity === 0) {
-            logger.info(`Deleting item as quantity will be zero: Item ID: ${itemId}`);
-            await connection.promise().query('DELETE FROM marketplace_items WHERE id = ?', [itemId]);
-          } else {
-            logger.info(`Updating item quantity: Item ID: ${itemId}, Decrement by: ${quantity}`);
-            await connection.promise().query('UPDATE marketplace_items SET quantity = quantity - ? WHERE id = ?', [quantity, itemId]);
-          }
-
-          // 4. 구매 기록 추가
-          logger.debug(`Inserting purchase record for Buyer Steam ID: ${buyerSteamId}, Item ID: ${itemId}, Price per unit: ${item.price}`);
-          await connection.promise().query(
-            'INSERT INTO tradelog (buyer_steam_id, id, price_per_unit, quantity, created_at) VALUES (?, ?, ?, ?, NOW())',
-            [buyerSteamId, itemId, item.price, quantity]
-          );
-          logger.info(`Purchase record inserted for Buyer Steam ID: ${buyerSteamId}, Item ID: ${itemId}`);
-
-          // 5. 구매자의 잔액 차감
-          logger.debug(`Deducting balance for Buyer Steam ID: ${buyerSteamId}, Amount: ${totalPrice}`);
-          await connection.promise().query('UPDATE user_data SET sek_coin = sek_coin - ? WHERE steam_id = ?', [totalPrice, buyerSteamId]);
-          logger.info(`Balance updated for Buyer Steam ID: ${buyerSteamId}, New Balance Deducted by: ${totalPrice}`);
-
-          // 트랜잭션 커밋
-          connection.commit((commitErr) => {
-            if (commitErr) {
-              logger.error(`Error committing transaction for Buyer Steam ID: ${buyerSteamId}, Error: ${commitErr.message}`);
-              return connection.rollback(() => {
-                connection.release();
-                logger.error(`Transaction rolled back for Buyer Steam ID: ${buyerSteamId}`);
-                return sendResponse(res, 500, 'Database Error', { error: 'Transaction commit failed' });
-              });
-            }
-
-            connection.release();
-            logger.info(`Transaction committed successfully for Buyer Steam ID: ${buyerSteamId}`);
-            return sendResponse(res, 200, 'Success', { message: 'Item purchased successfully' });
-          });
-        } catch (error) {
-          // 트랜잭션 롤백
-          logger.error(`Error during purchase process for Buyer Steam ID: ${buyerSteamId}, Error: ${error.message}`);
-          connection.rollback(() => {
-            connection.release();
-            logger.info(`Transaction rolled back for Buyer Steam ID: ${buyerSteamId}`);
-            return sendResponse(res, 400, 'Bad Request', { error: error.message });
-          });
-        }
+    let connection;
+    try {
+      // 데이터베이스 연결 획득
+      connection = await db.pool.promise().getConnection();
+      logger.info(`Database connection acquired for Buyer Steam ID: ${buyerSteamId}`, {
+        timestamp: new Date().toISOString(),
       });
-    });
+
+      // 트랜잭션 시작
+      await connection.beginTransaction();
+      logger.info(`Transaction started for Buyer Steam ID: ${buyerSteamId}`, {
+        timestamp: new Date().toISOString(),
+      });
+
+      // 1. 아이템 정보 조회 (수정 잠금)
+      logger.debug(`Fetching item details for Item ID: ${itemId}`, {
+        buyerSteamId,
+        timestamp: new Date().toISOString(),
+      });
+      const [itemRows] = await connection.query('SELECT * FROM marketplace_items WHERE id = ? FOR UPDATE', [itemId]);
+
+      if (itemRows.length === 0) {
+        logger.warn(`Item not found`, {
+          buyerSteamId,
+          itemId,
+          timestamp: new Date().toISOString(),
+        });
+        throw new Error('Item not found');
+      }
+
+      const item = itemRows[0];
+      logger.info(`Item retrieved`, {
+        buyerSteamId,
+        itemId,
+        itemDetails: item,
+        timestamp: new Date().toISOString(),
+      });
+
+      // 2. 구매자의 잔액 확인
+      logger.debug(`Checking balance for Buyer Steam ID: ${buyerSteamId}`, {
+        timestamp: new Date().toISOString(),
+      });
+      const [userRows] = await connection.query('SELECT * FROM user_data WHERE steam_id = ?', [buyerSteamId]);
+      if (userRows.length === 0) {
+        logger.warn(`User not found`, {
+          buyerSteamId,
+          timestamp: new Date().toISOString(),
+        });
+        throw new Error('User not found');
+      }
+      const userBalance = userRows[0].sek_coin;
+      const totalPrice = item.price_per_unit * quantity;
+      logger.info(`User balance and total price calculated`, {
+        buyerSteamId,
+        userBalance,
+        totalPrice,
+        timestamp: new Date().toISOString(),
+      });
+
+      if (userBalance < totalPrice) {
+        logger.warn(`Insufficient balance`, {
+          buyerSteamId,
+          userBalance,
+          required: totalPrice,
+          timestamp: new Date().toISOString(),
+        });
+        throw new Error('Insufficient balance');
+      }
+
+      // 3. 수량 확인 및 업데이트
+      logger.debug(`Checking item quantity for Item ID: ${itemId}`, {
+        buyerSteamId,
+        requestedQuantity: quantity,
+        availableQuantity: item.quantity,
+        timestamp: new Date().toISOString(),
+      });
+      if (item.quantity < quantity) {
+        logger.warn(`Insufficient item quantity`, {
+          buyerSteamId,
+          itemId,
+          requestedQuantity: quantity,
+          availableQuantity: item.quantity,
+          timestamp: new Date().toISOString(),
+        });
+        throw new Error('Insufficient item quantity');
+      }
+
+      // 수량을 줄이고, 남은 수량이 0이면 행을 삭제
+      if (item.quantity - quantity === 0) {
+        logger.info(`Deleting item as quantity will be zero`, {
+          buyerSteamId,
+          itemId,
+          timestamp: new Date().toISOString(),
+        });
+        await connection.query('DELETE FROM marketplace_items WHERE id = ?', [itemId]);
+      } else {
+        logger.info(`Updating item quantity`, {
+          buyerSteamId,
+          itemId,
+          decrementBy: quantity,
+          newQuantity: item.quantity - quantity,
+          timestamp: new Date().toISOString(),
+        });
+        await connection.query('UPDATE marketplace_items SET quantity = quantity - ? WHERE id = ?', [quantity, itemId]);
+      }
+
+      // 4. 구매 기록 추가
+      logger.debug(`Inserting purchase record`, {
+        buyerSteamId,
+        itemId,
+        pricePerUnit: item.price,
+        quantity,
+        timestamp: new Date().toISOString(),
+      });
+      await connection.query(
+        'INSERT INTO tradelog (seller_steam_id, buyer_steam_id, price_per_unit, item_name, quantity, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+        [item.seller_steam_id, buyerSteamId, item.price_per_unit, item.item_name, quantity]
+      );
+      await connection.query(`UPDATE online_storage SET ${item.item_name} = ${item.item_name} + ? WHERE steam_id = ?`, [quantity, buyerSteamId]);
+      logger.info(`Purchase record inserted`, {
+        buyerSteamId,
+        itemId,
+        timestamp: new Date().toISOString(),
+      });
+
+      // 5. 구매자의 잔액 차감
+      logger.debug(`Deducting balance`, {
+        buyerSteamId,
+        amount: totalPrice,
+        previousBalance: userBalance,
+        timestamp: new Date().toISOString(),
+      });
+      await connection.query('UPDATE user_data SET sek_coin = sek_coin - ? WHERE steam_id = ?', [totalPrice, buyerSteamId]);
+      logger.info(`Balance updated`, {
+        buyerSteamId,
+        deductedAmount: totalPrice,
+        newBalance: userBalance - totalPrice,
+        timestamp: new Date().toISOString(),
+      });
+
+      // 트랜잭션 커밋
+      await connection.commit();
+      logger.info(`Transaction committed successfully`, {
+        buyerSteamId,
+        itemId,
+        quantity,
+        totalPrice,
+        timestamp: new Date().toISOString(),
+      });
+
+      return sendResponse(res, 200, 'Success', { message: 'Item purchased successfully' });
+    } catch (error) {
+      // 트랜잭션 롤백
+      if (connection) {
+        try {
+          await connection.rollback();
+          logger.info(`Transaction rolled back`, {
+            buyerSteamId,
+            error: error.message,
+            timestamp: new Date().toISOString(),
+          });
+        } catch (rollbackError) {
+          logger.error(`Error during transaction rollback`, {
+            buyerSteamId,
+            rollbackError: rollbackError.message,
+            timestamp: new Date().toISOString(),
+          });
+        } finally {
+          connection.release();
+          logger.info(`Database connection released`, {
+            buyerSteamId,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
+      logger.error(`Error during purchase process`, {
+        buyerSteamId,
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString(),
+      });
+      // 에러 유형에 따라 적절한 응답 코드 및 메시지 반환
+      const statusCode = error.message === 'Item not found' || error.message === 'User not found' || error.message === 'Insufficient balance' || error.message === 'Insufficient item quantity' ? 400 : 500;
+      return sendResponse(res, statusCode, statusCode === 400 ? 'Bad Request' : 'Internal Server Error', { error: error.message });
+    } finally {
+      if (connection) connection.release();
+    }
   }
 ];
+
 
 exports.registerItem = [
   (req, res) => {
