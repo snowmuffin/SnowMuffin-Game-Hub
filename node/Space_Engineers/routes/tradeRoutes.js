@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const tradeController = require('../controllers/tradeController');
-const verifyUser = require('../middleware/verifyUser');
+const { authenticateToken, verifyUser } = require('../middleware/verifyUser');
 
 
 router.get('/getMarketplaceItems', tradeController.getMarketplaceItems);

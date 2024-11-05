@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const verifyUser = require('../middleware/verifyUser');
+const { authenticateToken, verifyUser } = require('../middleware/verifyUser');
 
 // Example route to get user profile
 router.get('/:steamid/profile', verifyUser, userController.getUserProfile);
