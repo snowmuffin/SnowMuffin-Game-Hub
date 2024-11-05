@@ -9,71 +9,44 @@ const sendResponse = (res, status, statusText, data) => {
 
 // 거래소 아이템 조회 엔드포인트
 exports.getMarketplaceItems = [
-  (req, res) => {
-    let { itemName, minPrice, maxPrice, page = 1, limit = 20 } = req.query;
+  async (req, res) => {
+    try {
+      // marketplace_items와 items_info 테이블을 조인하여 필요한 데이터 가져오기
+      const [rows] = await db.pool.promise().query(`
+        SELECT 
+          mi.seller_nickname AS nickname, 
+          mi.id, 
+          mi.item_name AS indexName, 
+          ii.display_name AS displayName, 
+          ii.category, 
+          ii.rarity, 
+          mi.quantity AS stock, 
+          mi.price_per_unit AS price 
+        FROM 
+          marketplace_items AS mi
+        LEFT JOIN 
+          items_info AS ii ON mi.item_name = ii.index_name
+      `);
 
-    // 입력값 검증 및 기본값 설정
-    page = parseInt(page);
-    limit = parseInt(limit);
-    page = isNaN(page) || page < 1 ? 1 : page;
-    limit = isNaN(limit) || limit < 1 ? 20 : limit;
-
-    let query = 'SELECT * FROM marketplace_items';
-    const params = [];
-
-    const conditions = [];
-    if (itemName) {
-      conditions.push('item_name LIKE ?');
-      params.push(`%${itemName}%`);
-    }
-    if (minPrice) {
-      minPrice = parseFloat(minPrice);
-      if (!isNaN(minPrice)) {
-        conditions.push('price_per_unit >= ?');
-        params.push(minPrice);
-      }
-    }
-    if (maxPrice) {
-      maxPrice = parseFloat(maxPrice);
-      if (!isNaN(maxPrice)) {
-        conditions.push('price_per_unit <= ?');
-        params.push(maxPrice);
-      }
-    }
-
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
-
-    // 페이지네이션 추가
-    const offset = (page - 1) * limit;
-    const paginatedQuery = query + ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-    const paginatedParams = [...params, limit, offset];
-
-    // 총 아이템 수 조회 쿼리
-    let countQuery = 'SELECT COUNT(*) as total FROM marketplace_items';
-    if (conditions.length > 0) {
-      countQuery += ' WHERE ' + conditions.join(' AND ');
-    }
-
-    // 두 개의 쿼리를 순차적으로 실행
-    db.pool.query(countQuery, params, (countErr, countResults) => {
-      if (countErr) {
-        logger.error(`Error fetching total marketplace items count: ${countErr.message}`);
-        return sendResponse(res, 500, 'Database Error', { error: 'Failed to fetch items count' });
-      }
-
-      const totalItems = countResults[0].total;
-
-      db.pool.query(paginatedQuery, paginatedParams, (err, results) => {
-        if (err) {
-          logger.error(`Error fetching marketplace items: ${err.message}`);
-          return sendResponse(res, 500, 'Database Error', { error: 'Failed to fetch items' });
-        }
-
-        sendResponse(res, 200, 'Success', { items: results, totalItems, page, limit });
+      // 응답 전송
+      res.status(200).json({
+        status: 200,
+        statusText: 'ok',
+        tableData: rows.map(row => ({
+          nickname: row.nickname,
+          id: row.id,
+          indexName: row.indexName,
+          displayName: row.displayName,
+          category: row.category,
+          rarity: row.rarity,
+          stock: row.stock,
+          price: row.price
+        }))
       });
-    });
+    } catch (error) {
+      logger.error(`Error fetching marketplace items: ${error.message}`);
+      return res.status(500).json({ status: 500, statusText: 'Internal Server Error', error: 'Failed to fetch marketplace items' });
+    }
   }
 ];
 

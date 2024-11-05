@@ -2,7 +2,7 @@ const db = require('../config/database');
 const logger = require('../utils/logger');
 
 exports.getResources = (req, res) => {
-  const {steamId} = req.user.steamId;
+  const steamId = req.user.steamId;
   logger.info(`Received request for resources. Steam ID: ${steamId}`);
 
   const query = 'SELECT * FROM online_storage WHERE steam_id = ?';
@@ -11,12 +11,52 @@ exports.getResources = (req, res) => {
   db.pool.query(query, [steamId], (err, results) => {
     if (err) {
       logger.error(`Error fetching resource data for Steam ID ${steamId}: ${err.message}`);
-      return res.status(500).json({ error: 'Database error' });
+      return res.status(500).json({
+        status: 500,
+        statustext: 'Database error',
+        data: null
+      });
     }
 
     if (results.length > 0) {
-      logger.info(`Resources retrieved for Steam ID ${steamId}: ${JSON.stringify(results[0])}`);
-      res.json({ steamid: steamId, resources: results[0] });
+      const resources = results[0];
+      const resourceKeys = Object.keys(resources).filter(key => key !== 'steam_id' && resources[key] > 0);
+
+      if (resourceKeys.length === 0) {
+        return res.status(200).json({
+          status: 200,
+          statustext: 'Resources retrieved successfully',
+          items: []
+        });
+      }
+
+      const itemInfoQuery = `SELECT index_name, display_name, category, description, rarity FROM items_info WHERE index_name IN (${resourceKeys.map(() => '?').join(', ')})`;
+      db.pool.query(itemInfoQuery, resourceKeys, (infoErr, infoResults) => {
+        if (infoErr) {
+          logger.error(`Error fetching item info for Steam ID ${steamId}: ${infoErr.message}`);
+          return res.status(500).json({
+            status: 500,
+            statustext: 'Database error',
+            data: null
+          });
+        }
+
+        const filteredResources = infoResults.map(info => ({
+          indexName: info.index_name,
+          displayName: info.display_name,
+          category: info.category,
+          description: info.description,
+          rarity: info.rarity,
+          quantity: resources[info.index_name]
+        }));
+
+        logger.info(`Resources retrieved for Steam ID ${steamId}: ${JSON.stringify(filteredResources)}`);
+        res.status(200).json({
+          status: 200,
+          statustext: 'Resources retrieved successfully',
+          items: filteredResources
+        });
+      });
     } else {
       const insertQuery = 'INSERT INTO online_storage (steam_id) VALUES (?)';
       logger.info(`No resources found for Steam ID ${steamId}. Inserting new row.`);
@@ -24,15 +64,26 @@ exports.getResources = (req, res) => {
       db.pool.query(insertQuery, [steamId], (insertErr) => {
         if (insertErr) {
           logger.error(`Error inserting new row for Steam ID ${steamId}: ${insertErr.message}`);
-          return res.status(500).json({ error: 'Error inserting new row' });
+          return res.status(500).json({
+            status: 500,
+            statustext: 'Error inserting new row',
+            data: null
+          });
         }
 
         logger.info(`New row added. Steam ID: ${steamId}`);
-        res.json({ steamid: steamId, resources: {} });
+        res.status(200).json({
+          status: 200,
+          statustext: 'New row added successfully',
+          items: []
+        });
       });
     }
   });
 };
+
+
+
 exports.download = (req, res) => {
     const { steamid, itemName, quantity } = req.body;
 

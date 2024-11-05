@@ -4,7 +4,7 @@ const tradeController = require('../controllers/tradeController');
 const { authenticateToken, verifyUser } = require('../middleware/verifyUser');
 
 
-router.get('/getMarketplaceItems', tradeController.getMarketplaceItems);
-router.post('/purchaseItem', tradeController.purchaseItem);
-router.post('/registerItem', tradeController.registerItem);
+router.post('/getMarketplaceItems',authenticateToken, tradeController.getMarketplaceItems);
+router.post('/purchaseItem',authenticateToken, tradeController.purchaseItem);
+router.post('/registerItem',authenticateToken, tradeController.registerItem);
 module.exports = router;

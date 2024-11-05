@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken'); // jwt 불러오기 추가
 const logger = require('../utils/logger');
-const SECRET_KEY = process.env.JWT_SECRET_KEY || 'your_secret_key';
+const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
 
 function verifyUser(req, res, next) {
   if (!req.isAuthenticated()) {
