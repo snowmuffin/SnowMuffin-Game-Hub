@@ -113,6 +113,12 @@ const insertItemsInfo = `
     ('SpeedModule_Level8', 'Speed Module Level 8', 'module', 'speed_module_lvl8', 0, 0),
     ('SpeedModule_Level9', 'Speed Module Level 9', 'module', 'speed_module_lvl9', 0, 0),
     ('SpeedModule_Level10', 'Speed Module Level 10', 'module', 'speed_module_lvl10', 0, 0),
+    ('FortressModule_Level1', 'Fortress Module Level 1', 'module', 'fortress_module_lvl1', 0, 0),
+    ('FortressModule_Level2', 'Fortress Module Level 2', 'module', 'fortress_module_lvl2', 0, 0),
+    ('FortressModule_Level3', 'Fortress Module Level 3', 'module', 'fortress_module_lvl3', 0, 0),
+    ('FortressModule_Level4', 'Fortress Module Level 4', 'module', 'fortress_module_lvl4', 0, 0),
+    ('FortressModule_Level5', 'Fortress Module Level 5', 'module', 'fortress_module_lvl5', 0, 0),
+    ('FortressModule_Level6', 'Fortress Module Level 6', 'module', 'fortress_module_lvl6', 0, 0),
     ('FortressModule_Level7', 'Fortress Module Level 7', 'module', 'fortress_module_lvl7', 0, 0),
     ('FortressModule_Level8', 'Fortress Module Level 8', 'module', 'fortress_module_lvl8', 0, 0),
     ('FortressModule_Level9', 'Fortress Module Level 9', 'module', 'fortress_module_lvl9', 0, 0),
@@ -129,6 +135,7 @@ const insertItemsInfo = `
     ('ingot_platinum', 'Platinum Ingot', 'ingot', 'ingot_platinum_description', 0, 0),
     ('ingot_uranium', 'Uranium Ingot', 'ingot', 'ingot_uranium_description', 0, 0),
     ('Prime_Matter', 'Prime Matter', 'misc', 'prime_matter_description', 0, 0)
+    ON DUPLICATE KEY UPDATE
       display_name = VALUES(display_name),
       category = VALUES(category),
       description = VALUES(description),
@@ -136,6 +143,34 @@ const insertItemsInfo = `
       quantity = VALUES(quantity);
 `;
 // Create online_storage table based on items_info table
+function createOnlineStorageTableFromItemsInfo() {
+  pool.query('SELECT index_name FROM items_info', (err, results) => {
+    if (err) {
+      logger.error(`Error fetching items_info: ${err.message}`);
+      return;
+    }
+
+    // Create columns based on items_info entries
+    let columns = results.map((row) => `${row.index_name} FLOAT DEFAULT 0`).join(', ');
+    const createOnlineStorageTable = `
+      CREATE TABLE IF NOT EXISTS online_storage (
+        steam_id BIGINT NOT NULL,
+        ${columns},
+        PRIMARY KEY (steam_id)
+      );
+    `;
+
+    pool.query(createOnlineStorageTable, (err) => {
+      if (err) {
+        logger.error(`Error creating online_storage table from items_info: ${err.message}`);
+        return;
+      }
+      logger.info('online_storage table has been verified or successfully created based on items_info.');
+    });
+  });
+}
+
+// Database connection and initialization
 pool.getConnection((err) => {
   if (err) {
     logger.error(`MySQL pool error: ${err.message}`);
@@ -143,80 +178,18 @@ pool.getConnection((err) => {
   }
   logger.info('Successfully connected to MySQL.');
 
-  // Initialize tables
-  const createUserTable = `
-    CREATE TABLE IF NOT EXISTS user_data (
-      steam_id BIGINT NOT NULL,
-      nickname VARCHAR(256) DEFAULT NULL,
-      sek_coin FLOAT DEFAULT 0,
-      total_damage FLOAT DEFAULT 0,
-      PRIMARY KEY (steam_id)
-    );
-  `;
   const createMarketTable = `
     CREATE TABLE IF NOT EXISTS marketplace_items (
       id INT NOT NULL AUTO_INCREMENT,
       seller_steam_id BIGINT NOT NULL,
       seller_nickname VARCHAR(256) DEFAULT NULL,
       item_name VARCHAR(256) NOT NULL,
+      price_per_unit INT UNSIGNED UNSIGNED NOT NULL,
       quantity INT UNSIGNED NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (id)
     );
   `;
-  const createOnlineStorageTable = `
-    CREATE TABLE IF NOT EXISTS online_storage (
-      steam_id BIGINT NOT NULL,
-      ore_stone FLOAT DEFAULT 0,
-      ore_iron FLOAT DEFAULT 0,
-      ore_nickel FLOAT DEFAULT 0,
-      ore_cobalt FLOAT DEFAULT 0,
-      ore_magnesium FLOAT DEFAULT 0,
-      ore_silicon FLOAT DEFAULT 0,
-      ore_silver FLOAT DEFAULT 0,
-      ore_gold FLOAT DEFAULT 0,
-      ore_platinum FLOAT DEFAULT 0,
-      ore_uranium FLOAT DEFAULT 0,
-      ore_ice FLOAT DEFAULT 0,
-      ore_scrap FLOAT DEFAULT 0,
-      ore_lanthanum FLOAT DEFAULT 0,
-      ore_cerium FLOAT DEFAULT 0,
-      Construction INT DEFAULT 0,
-      MetalGrid INT DEFAULT 0,
-      InteriorPlate INT DEFAULT 0,
-      SteelPlate INT DEFAULT 0,
-      Girder INT DEFAULT 0,
-      SmallTube INT DEFAULT 0,
-      LargeTube INT DEFAULT 0,
-      Motor INT DEFAULT 0,
-      Display INT DEFAULT 0,
-      BulletproofGlass INT DEFAULT 0,
-      Superconductor INT DEFAULT 0,
-      Computer INT DEFAULT 0,
-      Reactor INT DEFAULT 0,
-      Thrust INT DEFAULT 0,
-      GravityGenerator INT DEFAULT 0,
-      Medical INT DEFAULT 0,
-      RadioCommunication INT DEFAULT 0,
-      Detector INT DEFAULT 0,
-      Explosives INT DEFAULT 0,
-      SolarCell INT DEFAULT 0,
-      PowerCell INT DEFAULT 0,
-      Canvas INT DEFAULT 0,
-      EngineerPlushie INT DEFAULT 0,
-      SabiroidPlushie INT DEFAULT 0,
-      PrototechFrame INT DEFAULT 0,
-      PrototechPanel INT DEFAULT 0,
-      PrototechCapacitor INT DEFAULT 0,
-      PrototechPropulsionUnit INT DEFAULT 0,
-      PrototechMachinery INT DEFAULT 0,
-      PrototechCircuitry INT DEFAULT 0,
-      PrototechCoolingUnit INT DEFAULT 0,
-      DefenseUpgradeModule_Level1 INT DEFAULT 0,
-      DefenseUpgradeModule_Level2 INT DEFAULT 0,
-      DefenseUpgradeModule_Level3 INT DEFAULT 0,
-      DefenseUpgradeModule_Level4 INT DEFAULT 0,
-      PowerEfficiencyUpgradeModule_Level5 INT DEFAULT 0,
   const createtradelogTable = `
     CREATE TABLE IF NOT EXISTS tradelog (
       id INT NOT NULL AUTO_INCREMENT,
