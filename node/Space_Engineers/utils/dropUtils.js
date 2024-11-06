@@ -54,7 +54,7 @@ function getDrop(damage) {
   let totalWeight = 0;
 
   for (const [item, rarity] of Object.entries(dropTable)) {
-    const adjustedWeight = Math.pow(0.6, rarity);
+    const adjustedWeight = Math.pow(0.4, rarity);
     adjustedWeights[item] = parseFloat(adjustedWeight.toFixed(10)); // 소수점 10자리까지 정밀도 유지
     totalWeight += adjustedWeight;
     logger.debug(`Item: ${item}, Rarity: ${rarity}, Adjusted Weight: ${adjustedWeight}`);
