@@ -3,3 +3,4 @@
 /templates/img/Icons
 nginx/nginx.conf
 *.log
+/node/node_modules
