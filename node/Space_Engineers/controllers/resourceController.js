@@ -179,7 +179,7 @@ exports.upload = (req, res) => {
                          JOIN user_data AS ud ON os.steam_id = ud.steam_id
                          SET os.?? = os.?? + ?, ud.sek_coin = ud.sek_coin - ?
                          WHERE os.steam_id = ?`;
-    db.pool.query(updateQuery, [itemName, itemName, quantity, quantity, steamid], (updateErr) => {
+    db.pool.query(updateQuery, [itemName, itemName, quantity, quantity, steamid],(err, results) => {
       if (updateErr) {
         logger.error(`Error updating resource data for Steam ID ${steamid}: ${updateErr.message}`);
         return res.status(500).json({ error: 'Failed to update item quantity in online storage.' });
@@ -195,3 +195,84 @@ exports.upload = (req, res) => {
     });
   });
 };
+exports.upgrade = async (req, res) => {
+  const connection = await db.pool.promise().getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const steamId = req.user.steamId;
+    const targetItem = req.body.target_item;
+
+    // Step 1: Fetch blueprint with quantity information
+    const blueprintWithQuantityQuery = `
+      SELECT 
+        ingredient1, quantity1, 
+        ingredient2, quantity2, 
+        ingredient3, quantity3, 
+        ingredient4, quantity4, 
+        ingredient5, quantity5 
+      FROM blue_prints 
+      WHERE index_name = ?`;
+    const [blueprintResults] = await connection.query(blueprintWithQuantityQuery, [targetItem]);
+
+    if (blueprintResults.length === 0) {
+      logger.error(`Error checking blueprint data for ${targetItem}`);
+      await connection.rollback();
+      return res.status(400).json({ error: 'No blueprint data found' });
+    }
+
+    const blueprintData = blueprintResults[0];
+    const nonNullItems = {};
+
+    // Assign matched ingredient and quantity values to nonNullItems
+    for (let i = 1; i <= 5; i++) {
+      const ingredientKey = `ingredient${i}`;
+      const quantityKey = `quantity${i}`;
+
+      if (blueprintData[ingredientKey]) {
+        nonNullItems[blueprintData[ingredientKey]] = blueprintData[quantityKey];
+      }
+    }
+
+    const itemKeys = Object.keys(nonNullItems);
+
+    if (itemKeys.length === 0) {
+      logger.error(`No valid ingredients found for ${targetItem}`);
+      await connection.rollback();
+      return res.status(400).json({ error: 'No valid ingredients found' });
+    }
+
+    // Step 2: Check if inventory has enough items
+    const inventoryQuery = `SELECT ${itemKeys.map(() => '??').join(', ')} FROM online_storage WHERE steam_id = ?`;
+    const [inventoryResults] = await connection.query(inventoryQuery, [...itemKeys, steamId]);
+
+    const inventoryData = inventoryResults[0];
+    for (const [item, requiredQuantity] of Object.entries(nonNullItems)) {
+      if (inventoryData[item] < requiredQuantity) {
+        logger.error(`Not enough ${item} for Steam ID ${steamId}`);
+        await connection.rollback();
+        return res.status(400).json({ error: `Not enough ${item} in inventory` });
+      }
+    }
+
+    // Step 3: Update inventory - decrease ingredients and increase target item
+    const updateStatements = itemKeys.map(item => `${item} = ${item} - ?`).join(", ");
+    const updateInventoryQuery = `
+      UPDATE online_storage 
+      SET ${updateStatements}, ${targetItem} = ${targetItem} + 1 
+      WHERE steam_id = ?`;
+    const updateValues = [...Object.values(nonNullItems), steamId];
+
+    await connection.query(updateInventoryQuery, updateValues);
+
+    await connection.commit();
+    res.status(200).json({status:200, statustext: 'Upgrade process completed successfully' });
+  } catch (error) {
+    await connection.rollback();
+    logger.error(`Error during upgrade process: ${error.message}`);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    connection.release();
+  }
+};
+

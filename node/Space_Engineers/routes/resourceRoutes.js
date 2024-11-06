@@ -7,4 +7,5 @@ const router = express.Router();
 router.post('/', authenticateToken, resourceController.getResources);
 router.post('/download',resourceController.download);
 router.post('/upload',resourceController.upload);
+router.post('/upgrade', authenticateToken, resourceController.upgrade);
 module.exports = router;

@@ -24,6 +24,66 @@ const createItemsInfoTable = `
     PRIMARY KEY (index_name)
   );
 `;
+const createBlueprintsTable = `
+  CREATE TABLE IF NOT EXISTS blue_prints (
+    index_name VARCHAR(256) NOT NULL,
+    ingredient1 VARCHAR(256) DEFAULT NULL,
+    ingredient2 VARCHAR(256) DEFAULT NULL,
+    ingredient3 VARCHAR(256) DEFAULT NULL,
+    ingredient4 VARCHAR(256) DEFAULT NULL,
+    ingredient5 VARCHAR(256) DEFAULT NULL,
+    quantity1 INT DEFAULT 1,
+    quantity2 INT DEFAULT 1,
+    quantity3 INT DEFAULT 1,
+    quantity4 INT DEFAULT 1,
+    quantity5 INT DEFAULT 1,
+    chance FLOAT DEFAULT 1.0,
+    PRIMARY KEY (index_name)
+  );
+`;
+
+const insertBlueprints = `
+  INSERT INTO blue_prints (index_name, ingredient1, ingredient2, ingredient3, ingredient4,ingredient5,quantity1,quantity2,quantity3,quantity4,quantity5) VALUES
+    ('BerserkerModule_Level2', 'BerserkerModule_Level1', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,1,1,1,0),
+    ('BerserkerModule_Level3', 'BerserkerModule_Level2', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,2,2,2,0),
+    ('BerserkerModule_Level4', 'BerserkerModule_Level3', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,3,3,3,0),
+    ('BerserkerModule_Level5', 'BerserkerModule_Level4', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,4,4,4,0),
+    ('BerserkerModule_Level6', 'BerserkerModule_Level5', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,5,5,5,0),
+    ('BerserkerModule_Level7', 'BerserkerModule_Level6', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,6,6,6,0),
+    ('BerserkerModule_Level8', 'BerserkerModule_Level7', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,7,7,7,0),
+    ('BerserkerModule_Level9', 'BerserkerModule_Level8', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,8,8,8,0),
+    ('BerserkerModule_Level10', 'BerserkerModule_Level9', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,9,9,9,0),
+    ('SpeedModule_Level2', 'SpeedModule_Level1', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,1,1,1,0),
+    ('SpeedModule_Level3', 'SpeedModule_Level2', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,2,2,2,0),
+    ('SpeedModule_Level4', 'SpeedModule_Level3', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,3,3,3,0),
+    ('SpeedModule_Level5', 'SpeedModule_Level4', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,4,4,4,0),
+    ('SpeedModule_Level6', 'SpeedModule_Level5', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,5,5,5,0),
+    ('SpeedModule_Level7', 'SpeedModule_Level6', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,6,6,6,0),
+    ('SpeedModule_Level8', 'SpeedModule_Level7', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,7,7,7,0),
+    ('SpeedModule_Level9', 'SpeedModule_Level8', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,8,8,8,0),
+    ('SpeedModule_Level10', 'SpeedModule_Level9', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,9,9,9,0),
+    ('FortressModule_Level2', 'FortressModule_Level1', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,1,1,1,0),
+    ('FortressModule_Level3', 'FortressModule_Level2', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,2,2,2,0),
+    ('FortressModule_Level4', 'FortressModule_Level3', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,3,3,3,0),
+    ('FortressModule_Level5', 'FortressModule_Level4', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,4,4,4,0),
+    ('FortressModule_Level6', 'FortressModule_Level5', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,5,5,5,0),
+    ('FortressModule_Level7', 'FortressModule_Level6', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,6,6,6,0),
+    ('FortressModule_Level8', 'FortressModule_Level7', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,7,7,7,0),
+    ('FortressModule_Level9', 'FortressModule_Level8', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,8,8,8,0),
+    ('FortressModule_Level10', 'FortressModule_Level9', 'PowerEfficiencyUpgradeModule_Level10', 'AttackUpgradeModule_Level10', 'DefenseUpgradeModule_Level10', null,15,9,9,9,0)
+    ON DUPLICATE KEY UPDATE
+      ingredient1 = VALUES(ingredient1),
+      ingredient2 = VALUES(ingredient2),
+      ingredient3 = VALUES(ingredient3),
+      ingredient4 = VALUES(ingredient4),
+      ingredient5 = VALUES(ingredient5),
+      quantity1 = VALUES(quantity1),
+      quantity2 = VALUES(quantity2),
+      quantity3 = VALUES(quantity3),
+      quantity4 = VALUES(quantity4),
+      quantity5 = VALUES(quantity5),
+      chance=1;
+`;
 
 // Insert item data into items_info table
 const insertItemsInfo = `
@@ -83,6 +143,16 @@ const insertItemsInfo = `
     ('DefenseUpgradeModule_Level8', 'Defense Upgrade Module Level 8', 'module', 'defense_upgrade_lvl8', 0),
     ('DefenseUpgradeModule_Level9', 'Defense Upgrade Module Level 9', 'module', 'defense_upgrade_lvl9', 0),
     ('DefenseUpgradeModule_Level10', 'Defense Upgrade Module Level 10', 'module', 'defense_upgrade_lvl10', 0),
+    ('PowerEfficiencyUpgradeModule_Level1', 'Defense Upgrade Module Level 1', 'module', 'defense_upgrade_lvl1', 0),
+    ('PowerEfficiencyUpgradeModule_Level2', 'Defense Upgrade Module Level 2', 'module', 'defense_upgrade_lvl2', 0),
+    ('PowerEfficiencyUpgradeModule_Level3', 'Defense Upgrade Module Level 3', 'module', 'defense_upgrade_lvl3', 0),
+    ('PowerEfficiencyUpgradeModule_Level4', 'Defense Upgrade Module Level 4', 'module', 'defense_upgrade_lvl4', 0),
+    ('PowerEfficiencyUpgradeModule_Level5', 'Defense Upgrade Module Level 5', 'module', 'defense_upgrade_lvl5', 0),
+    ('PowerEfficiencyUpgradeModule_Level6', 'Defense Upgrade Module Level 6', 'module', 'defense_upgrade_lvl6', 0),
+    ('PowerEfficiencyUpgradeModule_Level7', 'Defense Upgrade Module Level 7', 'module', 'defense_upgrade_lvl7', 0),
+    ('PowerEfficiencyUpgradeModule_Level8', 'Defense Upgrade Module Level 8', 'module', 'defense_upgrade_lvl8', 0),
+    ('PowerEfficiencyUpgradeModule_Level9', 'Defense Upgrade Module Level 9', 'module', 'defense_upgrade_lvl9', 0),
+    ('PowerEfficiencyUpgradeModule_Level10', 'Defense Upgrade Module Level 10', 'module', 'defense_upgrade_lvl10', 0),
     ('AttackUpgradeModule_Level1', 'Attack Upgrade Module Level 1', 'module', 'attack_upgrade_lvl1', 0),
     ('AttackUpgradeModule_Level2', 'Attack Upgrade Module Level 2', 'module', 'attack_upgrade_lvl2', 0),
     ('AttackUpgradeModule_Level3', 'Attack Upgrade Module Level 3', 'module', 'attack_upgrade_lvl3', 0),
@@ -245,6 +315,21 @@ pool.getConnection((err) => {
   });
 });
 
+pool.query(createBlueprintsTable, (err) => {
+  if (err) {
+    logger.error(`Error creating Blueprints table: ${err.message}`);
+    return;
+  }
+  logger.info('Blueprints table has been verified or successfully created.');
+});
+
+pool.query(insertBlueprints, (err) => {
+  if (err) {
+    logger.error(`Error creating Blueprints table: ${err.message}`);
+    return;
+  }
+  logger.info('Blueprints table has been verified or successfully created.');
+});
 // Function to close connection
 function endConnection(callback) {
   pool.end((err) => {

@@ -2,9 +2,33 @@ const logger = require('./logger');
 
 // Drop table configuration
 const dropTable = {
-  PrototechFrame: 11,
-  PrototechPanel: 4,
-  // ...(생략) 모든 항목 포함
+  PrototechFrame: 11, PrototechPanel: 4, PrototechCapacitor: 4, PrototechPropulsionUnit: 4,
+  PrototechMachinery: 4, PrototechCircuitry: 4, PrototechCoolingUnit: 8,
+  DefenseUpgradeModule_Level1: 1, DefenseUpgradeModule_Level2: 2, DefenseUpgradeModule_Level3: 3,
+  DefenseUpgradeModule_Level4: 4, DefenseUpgradeModule_Level5: 5, DefenseUpgradeModule_Level6: 6,
+  DefenseUpgradeModule_Level7: 7, DefenseUpgradeModule_Level8: 8, DefenseUpgradeModule_Level9: 9,
+  DefenseUpgradeModule_Level10: 10,
+  AttackUpgradeModule_Level1: 1, AttackUpgradeModule_Level2: 2, AttackUpgradeModule_Level3: 3,
+  AttackUpgradeModule_Level4: 4, AttackUpgradeModule_Level5: 5, AttackUpgradeModule_Level6: 6,
+  AttackUpgradeModule_Level7: 7, AttackUpgradeModule_Level8: 8, AttackUpgradeModule_Level9: 9,
+  AttackUpgradeModule_Level10: 10,
+  PowerEfficiencyUpgradeModule_Level1: 1, PowerEfficiencyUpgradeModule_Level2: 2, PowerEfficiencyUpgradeModule_Level3: 3,
+  PowerEfficiencyUpgradeModule_Level4: 4, PowerEfficiencyUpgradeModule_Level5: 5, PowerEfficiencyUpgradeModule_Level6: 6,
+  PowerEfficiencyUpgradeModule_Level7: 7, PowerEfficiencyUpgradeModule_Level8: 8, PowerEfficiencyUpgradeModule_Level9: 9,
+  PowerEfficiencyUpgradeModule_Level10: 10,
+  BerserkerModule_Level1: 11, BerserkerModule_Level2: 12, BerserkerModule_Level3: 13,
+  BerserkerModule_Level4: 14, BerserkerModule_Level5: 15, BerserkerModule_Level6: 16,
+  BerserkerModule_Level7: 17, BerserkerModule_Level8: 18, BerserkerModule_Level9: 19,
+  BerserkerModule_Level10: 20,
+  SpeedModule_Level1: 11, SpeedModule_Level2: 12, SpeedModule_Level3: 13,
+  SpeedModule_Level4: 14, SpeedModule_Level5: 15, SpeedModule_Level6: 16,
+  SpeedModule_Level7: 17, SpeedModule_Level8: 18, SpeedModule_Level9: 19,
+  SpeedModule_Level10: 20,
+  FortressModule_Level1: 11, FortressModule_Level2: 12, FortressModule_Level3: 13,
+  FortressModule_Level4: 14, FortressModule_Level5: 15, FortressModule_Level6: 16,
+  FortressModule_Level7: 17, FortressModule_Level8: 18, FortressModule_Level9: 19,
+  FortressModule_Level10: 20,
+  Prime_Matter: 4,
   SpaceCredit: 1 // Removed duplicate entries
 };
 
@@ -30,7 +54,7 @@ function getDrop(damage) {
   let totalWeight = 0;
 
   for (const [item, rarity] of Object.entries(dropTable)) {
-    const adjustedWeight = Math.pow(0.4, rarity);
+    const adjustedWeight = Math.pow(0.5, rarity);
     adjustedWeights[item] = adjustedWeight;
     totalWeight += adjustedWeight;
     logger.debug(`Item: ${item}, Rarity: ${rarity}, Adjusted Weight: ${adjustedWeight}`);
