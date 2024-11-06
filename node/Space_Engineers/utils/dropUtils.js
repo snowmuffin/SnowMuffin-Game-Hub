@@ -16,20 +16,20 @@ const dropTable = {
   PowerEfficiencyUpgradeModule_Level4: 4, PowerEfficiencyUpgradeModule_Level5: 5, PowerEfficiencyUpgradeModule_Level6: 6,
   PowerEfficiencyUpgradeModule_Level7: 7, PowerEfficiencyUpgradeModule_Level8: 8, PowerEfficiencyUpgradeModule_Level9: 9,
   PowerEfficiencyUpgradeModule_Level10: 10,
-  BerserkerModule_Level1: 11, BerserkerModule_Level2: 12, BerserkerModule_Level3: 13,
-  BerserkerModule_Level4: 14, BerserkerModule_Level5: 15, BerserkerModule_Level6: 16,
-  BerserkerModule_Level7: 17, BerserkerModule_Level8: 18, BerserkerModule_Level9: 19,
-  BerserkerModule_Level10: 20,
-  SpeedModule_Level1: 11, SpeedModule_Level2: 12, SpeedModule_Level3: 13,
-  SpeedModule_Level4: 14, SpeedModule_Level5: 15, SpeedModule_Level6: 16,
-  SpeedModule_Level7: 17, SpeedModule_Level8: 18, SpeedModule_Level9: 19,
-  SpeedModule_Level10: 20,
-  FortressModule_Level1: 11, FortressModule_Level2: 12, FortressModule_Level3: 13,
-  FortressModule_Level4: 14, FortressModule_Level5: 15, FortressModule_Level6: 16,
-  FortressModule_Level7: 17, FortressModule_Level8: 18, FortressModule_Level9: 19,
-  FortressModule_Level10: 20,
-  Prime_Matter: 4,
-  SpaceCredit: 1 // Removed duplicate entries
+  BerserkerModule_Level1: 8, BerserkerModule_Level2: 9, BerserkerModule_Level3: 10,
+  BerserkerModule_Level4: 11, BerserkerModule_Level5: 12, BerserkerModule_Level6: 13,
+  BerserkerModule_Level7: 14, BerserkerModule_Level8: 15, BerserkerModule_Level9: 16,
+  BerserkerModule_Level10: 17,
+  SpeedModule_Level1: 8, SpeedModule_Level2: 9, SpeedModule_Level3: 10,
+  SpeedModule_Level4: 11, SpeedModule_Level5: 12, SpeedModule_Level6: 13,
+  SpeedModule_Level7: 14, SpeedModule_Level8: 15, SpeedModule_Level9: 16,
+  SpeedModule_Level10: 17,
+  FortressModule_Level1: 8, FortressModule_Level2: 9, FortressModule_Level3: 10,
+  FortressModule_Level4: 11, FortressModule_Level5: 12, FortressModule_Level6: 13,
+  FortressModule_Level7: 14, FortressModule_Level8: 15, FortressModule_Level9: 16,
+  FortressModule_Level10: 17,
+  Prime_Matter: 3,prototech_scrap:3,
+  dummy1: 1 // Removed duplicate entries
 };
 
 // Function to determine item drop based on damage
@@ -54,7 +54,7 @@ function getDrop(damage) {
   let totalWeight = 0;
 
   for (const [item, rarity] of Object.entries(dropTable)) {
-    const adjustedWeight = Math.pow(0.5, rarity);
+    const adjustedWeight = Math.pow(0.4, rarity);
     adjustedWeights[item] = adjustedWeight;
     totalWeight += adjustedWeight;
     logger.debug(`Item: ${item}, Rarity: ${rarity}, Adjusted Weight: ${adjustedWeight}`);

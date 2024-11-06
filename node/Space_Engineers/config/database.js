@@ -20,7 +20,6 @@ const createItemsInfoTable = `
     category VARCHAR(256) DEFAULT NULL,
     description VARCHAR(256) DEFAULT NULL,
     rarity INT DEFAULT 0,
-    quantity INT DEFAULT 0,
     PRIMARY KEY (index_name)
   );
 `;
@@ -81,8 +80,7 @@ const insertBlueprints = `
       quantity2 = VALUES(quantity2),
       quantity3 = VALUES(quantity3),
       quantity4 = VALUES(quantity4),
-      quantity5 = VALUES(quantity5),
-      chance=1;
+      quantity5 = VALUES(quantity5);
 `;
 
 // Insert item data into items_info table
@@ -143,16 +141,16 @@ const insertItemsInfo = `
     ('DefenseUpgradeModule_Level8', 'Defense Upgrade Module Level 8', 'module', 'defense_upgrade_lvl8', 0),
     ('DefenseUpgradeModule_Level9', 'Defense Upgrade Module Level 9', 'module', 'defense_upgrade_lvl9', 0),
     ('DefenseUpgradeModule_Level10', 'Defense Upgrade Module Level 10', 'module', 'defense_upgrade_lvl10', 0),
-    ('PowerEfficiencyUpgradeModule_Level1', 'Defense Upgrade Module Level 1', 'module', 'defense_upgrade_lvl1', 0),
-    ('PowerEfficiencyUpgradeModule_Level2', 'Defense Upgrade Module Level 2', 'module', 'defense_upgrade_lvl2', 0),
-    ('PowerEfficiencyUpgradeModule_Level3', 'Defense Upgrade Module Level 3', 'module', 'defense_upgrade_lvl3', 0),
-    ('PowerEfficiencyUpgradeModule_Level4', 'Defense Upgrade Module Level 4', 'module', 'defense_upgrade_lvl4', 0),
-    ('PowerEfficiencyUpgradeModule_Level5', 'Defense Upgrade Module Level 5', 'module', 'defense_upgrade_lvl5', 0),
-    ('PowerEfficiencyUpgradeModule_Level6', 'Defense Upgrade Module Level 6', 'module', 'defense_upgrade_lvl6', 0),
-    ('PowerEfficiencyUpgradeModule_Level7', 'Defense Upgrade Module Level 7', 'module', 'defense_upgrade_lvl7', 0),
-    ('PowerEfficiencyUpgradeModule_Level8', 'Defense Upgrade Module Level 8', 'module', 'defense_upgrade_lvl8', 0),
-    ('PowerEfficiencyUpgradeModule_Level9', 'Defense Upgrade Module Level 9', 'module', 'defense_upgrade_lvl9', 0),
-    ('PowerEfficiencyUpgradeModule_Level10', 'Defense Upgrade Module Level 10', 'module', 'defense_upgrade_lvl10', 0),
+    ('PowerEfficiencyUpgradeModule_Level1', 'Power Efficiency Upgrade Module 1', 'module', 'power_efficiency_upgrade_lvl1', 0),
+    ('PowerEfficiencyUpgradeModule_Level2', 'Power Efficiency Upgrade Module Level 2', 'module', 'power_efficiency_upgrade_lvl2', 0),
+    ('PowerEfficiencyUpgradeModule_Level3', 'Power Efficiency Upgrade Module Level 3', 'module', 'power_efficiency_upgrade_lvl3', 0),
+    ('PowerEfficiencyUpgradeModule_Level4', 'Power Efficiency Upgrade Module Level 4', 'module', 'power_efficiency_upgrade_lvl4', 0),
+    ('PowerEfficiencyUpgradeModule_Level5', 'Power Efficiency Upgrade Module Level 5', 'module', 'power_efficiency_upgrade_lvl5', 0),
+    ('PowerEfficiencyUpgradeModule_Level6', 'Power Efficiency Upgrade Module Level 6', 'module', 'power_efficiency_upgrade_lvl6', 0),
+    ('PowerEfficiencyUpgradeModule_Level7', 'Power Efficiency Upgrade Module Level 7', 'module', 'power_efficiency_upgrade_lvl7', 0),
+    ('PowerEfficiencyUpgradeModule_Level8', 'Power Efficiency Upgrade Module Level 8', 'module', 'power_efficiency_upgrade_lvl8', 0),
+    ('PowerEfficiencyUpgradeModule_Level9', 'Power Efficiency Upgrade Module Level 9', 'module', 'power_efficiency_upgrade_lvl9', 0),
+    ('PowerEfficiencyUpgradeModule_Level10', 'Power Efficiency Upgrade Module Level 10', 'module', 'power_efficiency_upgrade_lvl10', 0),
     ('AttackUpgradeModule_Level1', 'Attack Upgrade Module Level 1', 'module', 'attack_upgrade_lvl1', 0),
     ('AttackUpgradeModule_Level2', 'Attack Upgrade Module Level 2', 'module', 'attack_upgrade_lvl2', 0),
     ('AttackUpgradeModule_Level3', 'Attack Upgrade Module Level 3', 'module', 'attack_upgrade_lvl3', 0),
@@ -209,8 +207,49 @@ const insertItemsInfo = `
       display_name = VALUES(display_name),
       category = VALUES(category),
       description = VALUES(description),
-      rarity = VALUES(rarity),
-      quantity = VALUES(quantity);
+      rarity = VALUES(rarity);
+`;
+const createMarketTable = `
+CREATE TABLE IF NOT EXISTS marketplace_items (
+  id INT NOT NULL AUTO_INCREMENT,
+  seller_steam_id BIGINT NOT NULL,
+  seller_nickname VARCHAR(256) DEFAULT NULL,
+  item_name VARCHAR(256) NOT NULL,
+  price_per_unit DECIMAL(10, 2) UNSIGNED NOT NULL,
+  quantity INT UNSIGNED NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  FOREIGN KEY (item_name) REFERENCES items_info(index_name)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+`;
+const createTradeLogTable = `
+CREATE TABLE IF NOT EXISTS tradelog (
+  id INT NOT NULL AUTO_INCREMENT,
+  seller_nickname VARCHAR(256) DEFAULT NULL,
+  seller_steam_id BIGINT NOT NULL,
+  buyer_steam_id BIGINT NOT NULL,
+  buyer_nickname VARCHAR(256) DEFAULT NULL,
+  item_name VARCHAR(256) NOT NULL,
+  price_per_unit DECIMAL(10, 2) UNSIGNED NOT NULL,
+  quantity INT UNSIGNED NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  FOREIGN KEY (item_name) REFERENCES items_info(index_name)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+`;
+
+const createUserTable = `
+  CREATE TABLE IF NOT EXISTS user_data (
+    steam_id BIGINT NOT NULL,
+    nickname VARCHAR(256) DEFAULT NULL,
+    sek_coin FLOAT DEFAULT 0,
+    total_damage FLOAT DEFAULT 0,
+    PRIMARY KEY (steam_id)
+  );
 `;
 // Create online_storage table based on items_info table
 function createOnlineStorageTableFromItemsInfo() {
@@ -239,6 +278,36 @@ function createOnlineStorageTableFromItemsInfo() {
     });
   });
 }
+async function initializeDatabase() {
+  try {
+    await pool.promise().query(createItemsInfoTable);
+    logger.info('items_info table has been verified or successfully created.');
+
+    await pool.promise().query(insertItemsInfo);
+    logger.info('Items have been inserted or updated in items_info table.');
+
+    await createOnlineStorageTableFromItemsInfo();
+
+    await pool.promise().query(createUserTable);
+    logger.info('user_data table has been verified or successfully created.');
+
+    await pool.promise().query(createMarketTable);
+    logger.info('marketplace_items table has been verified or successfully created.');
+
+    await pool.promise().query(createTradeLogTable);
+    logger.info('tradelog table has been verified or successfully created.');
+
+    await pool.promise().query(createBlueprintsTable);
+    logger.info('Blueprints table has been verified or successfully created.');
+
+    await pool.promise().query(insertBlueprints);
+    logger.info('Blueprints have been inserted or updated in blue_prints table.');
+
+  } catch (err) {
+    logger.error(`Database initialization error: ${err.message}`);
+    process.exit(1);
+  }
+}
 
 // Database connection and initialization
 pool.getConnection((err) => {
@@ -247,89 +316,10 @@ pool.getConnection((err) => {
     return;
   }
   logger.info('Successfully connected to MySQL.');
+  initializeDatabase();
 
-  const createMarketTable = `
-    CREATE TABLE IF NOT EXISTS marketplace_items (
-      id INT NOT NULL AUTO_INCREMENT,
-      seller_steam_id BIGINT NOT NULL,
-      seller_nickname VARCHAR(256) DEFAULT NULL,
-      item_name VARCHAR(256) NOT NULL,
-      price_per_unit INT UNSIGNED UNSIGNED NOT NULL,
-      quantity INT UNSIGNED NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (id)
-    );
-  `;
-  const createtradelogTable = `
-    CREATE TABLE IF NOT EXISTS tradelog (
-      id INT NOT NULL AUTO_INCREMENT,
-      seller_nickname VARCHAR(256) DEFAULT NULL,
-      seller_steam_id BIGINT NOT NULL,
-      buyer_steam_id BIGINT NOT NULL,
-      buyer_nickname VARCHAR(256) DEFAULT NULL,
-      item_name VARCHAR(256) NOT NULL,
-      price_per_unit INT UNSIGNED UNSIGNED NOT NULL,
-      quantity INT UNSIGNED NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (id)
-    );
-  `;
-
-  // Create items_info table
-  pool.query(createItemsInfoTable, (err) => {
-    if (err) {
-      logger.error(`Error creating items_info table: ${err.message}`);
-      return;
-    }
-    logger.info('items_info table has been verified or successfully created.');
-
-    // Insert item data into items_info table
-    pool.query(insertItemsInfo, (err) => {
-      if (err) {
-        logger.error(`Error inserting items into items_info table: ${err.message}`);
-        return;
-      }
-      logger.info('Items have been inserted or updated in items_info table.');
-
-      // Create online_storage table based on items_info
-      createOnlineStorageTableFromItemsInfo();
-    });
-  });
-
-  // Create marketplace_items table
-  pool.query(createMarketTable, (err) => {
-    if (err) {
-      logger.error(`Error creating marketplace_items table: ${err.message}`);
-      return;
-    }
-    logger.info('marketplace_items table has been verified or successfully created.');
-  });
-
-  // Create tradelog table
-  pool.query(createtradelogTable, (err) => {
-    if (err) {
-      logger.error(`Error creating tradelog table: ${err.message}`);
-      return;
-    }
-    logger.info('tradelog table has been verified or successfully created.');
-  });
 });
 
-pool.query(createBlueprintsTable, (err) => {
-  if (err) {
-    logger.error(`Error creating Blueprints table: ${err.message}`);
-    return;
-  }
-  logger.info('Blueprints table has been verified or successfully created.');
-});
-
-pool.query(insertBlueprints, (err) => {
-  if (err) {
-    logger.error(`Error creating Blueprints table: ${err.message}`);
-    return;
-  }
-  logger.info('Blueprints table has been verified or successfully created.');
-});
 // Function to close connection
 function endConnection(callback) {
   pool.end((err) => {

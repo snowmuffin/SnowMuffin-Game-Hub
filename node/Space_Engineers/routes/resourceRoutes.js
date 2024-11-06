@@ -8,4 +8,5 @@ router.post('/', authenticateToken, resourceController.getResources);
 router.post('/download',resourceController.download);
 router.post('/upload',resourceController.upload);
 router.post('/upgrade', authenticateToken, resourceController.upgrade);
+router.post('/getBlueprints', authenticateToken, resourceController.getBlueprints);
 module.exports = router;
