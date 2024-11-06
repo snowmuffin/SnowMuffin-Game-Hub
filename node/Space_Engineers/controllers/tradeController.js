@@ -51,7 +51,7 @@ exports.getMarketplaceItems = [
 ];
 
 exports.purchaseItem = [
-  async (req, res) => { // 비동기 함수로 변경하여 코드 가독성 향상
+  async (req, res) => {
     const { buyerSteamId, itemId, quantity } = req.body;
     logger.info(`Purchase attempt initiated by Steam ID: ${buyerSteamId}`, {
       itemId,
