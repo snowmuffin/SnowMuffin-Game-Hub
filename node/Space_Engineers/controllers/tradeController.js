@@ -51,7 +51,13 @@ exports.getMarketplaceItems = asyncHandler(async (req, res) => {
 
     // 쿼리 실행
     const [rows] = await db.pool.promise().query(query, [buyerSteamId]);
-
+    if (rows.length === 0) {
+      return res.status(406).json({
+        status: 406,
+        statusText: 'Not Acceptable',
+        message: '마켓플레이스에 아이템이 없습니다.'
+      });
+    }
     // 응답 전송
     res.status(200).json({
       status: 200,
