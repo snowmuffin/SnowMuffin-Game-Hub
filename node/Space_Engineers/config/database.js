@@ -213,7 +213,7 @@ const createMarketTable = `
 CREATE TABLE IF NOT EXISTS marketplace_items (
   id INT NOT NULL AUTO_INCREMENT,
   seller_steam_id BIGINT NOT NULL,
-  seller_nickname VARCHAR(256) DEFAULT NULL,
+  seller_nickname VARCHAR(256) NOT NULL DEFAULT 'Unknown',
   item_name VARCHAR(256) NOT NULL,
   price_per_unit DECIMAL(10, 2) UNSIGNED NOT NULL,
   quantity INT UNSIGNED NOT NULL,

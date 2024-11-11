@@ -145,26 +145,15 @@ exports.upload = asyncHandler(async (req, res) => {
     }
 
     const availableQuantity = results[0].availableQuantity;
-    const currentCoin = results[0].sek_coin;
-
-    if (currentCoin < quantity) {
-      await connection.rollback();
-      return res.status(400).json({ 
-        error: 'Insufficient sek_coin balance.',
-        currentCoin,
-        requiredAmount: quantity,
-        message: `You need ${quantity} sek_coin, but only have ${currentCoin} available.`
-      });
-    }
 
     // Update inventory and sek_coin
     const updateQuery = `
       UPDATE online_storage AS os
       JOIN user_data AS ud ON os.steam_id = ud.steam_id
-      SET os.?? = os.?? + ?, ud.sek_coin = ud.sek_coin - ?
+      SET os.?? = os.?? + ?
       WHERE os.steam_id = ?
     `;
-    await connection.query(updateQuery, [itemName, itemName, quantity, quantity, steamid]);
+    await connection.query(updateQuery, [itemName, itemName, quantity, steamid]);
 
     await connection.commit();
 
