@@ -382,7 +382,7 @@ exports.registerItem = asyncHandler(async (req, res) => {
       [itemName,sellerSteamId]
     );
 
-    if (storageResult.length === 0 || storageResult[0].quantity < quantity) {
+    if (storageResult.length === 0 || storageResult[0] < quantity) {
       logger.warn(`Item registration failed: Insufficient quantity in storage`, {
         sellerSteamId,
         itemName,
