@@ -104,7 +104,7 @@ exports.download = asyncHandler(async (req, res) => {
     logger.info(`Downloaded ${quantity}x '${itemName}' for Steam ID ${steamid}`);
     return res.status(200).json({
       Exist: true,
-      quantity: availableQuantity - quantity,
+      quantity: availableQuantity,
       message: `${quantity}x '${itemName}' has been downloaded and deducted from your storage.`
     });
   } catch (error) {
@@ -131,11 +131,8 @@ exports.upload = asyncHandler(async (req, res) => {
 
     // Check if Steam ID exists and fetch sek_coin
     const checkQuery = `
-      SELECT ?? AS availableQuantity, sek_coin 
-      FROM online_storage AS os 
-      JOIN user_data AS ud ON os.steam_id = ud.steam_id 
-      WHERE os.steam_id = ? 
-      FOR UPDATE
+      SELECT ?? AS availableQuantity
+      FROM online_storage WHERE steam_id = ?
     `;
     const [results] = await connection.query(checkQuery, [itemName, steamid]);
 
@@ -148,10 +145,9 @@ exports.upload = asyncHandler(async (req, res) => {
 
     // Update inventory and sek_coin
     const updateQuery = `
-      UPDATE online_storage AS os
-      JOIN user_data AS ud ON os.steam_id = ud.steam_id
-      SET os.?? = os.?? + ?
-      WHERE os.steam_id = ?
+      UPDATE online_storage
+      SET ?? = ?? + ?
+      WHERE steam_id = ?
     `;
     await connection.query(updateQuery, [itemName, itemName, quantity, steamid]);
 
@@ -161,8 +157,7 @@ exports.upload = asyncHandler(async (req, res) => {
     return res.status(200).json({
       Exist: true,
       quantity: availableQuantity + quantity,
-      remainingCoins: currentCoin - quantity,
-      message: `${quantity}x '${itemName}' has been uploaded to your storage, and ${quantity} sek_coin has been deducted from your account.`
+      message: `${quantity}x '${itemName}' has been uploaded to your storage.`
     });
   } catch (error) {
     await connection.rollback();

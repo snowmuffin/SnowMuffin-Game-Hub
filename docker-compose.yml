@@ -10,7 +10,6 @@ services:
     environment:
       - DOMAIN=${DOMAIN}
       - HOST=${HOST}
-    entrypoint: /bin/sh -c "/etc/nginx/entrypoint.sh"
     volumes:
       - ./nginx/:/etc/nginx/
       - ./sek_server_web/:/usr/share/nginx/sek_server_web/

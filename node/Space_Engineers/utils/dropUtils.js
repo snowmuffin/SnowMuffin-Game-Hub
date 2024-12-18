@@ -32,13 +32,21 @@ const dropTable = {
   dummy: 1 // Removed duplicate entries
 };
 
-// Function to determine item drop based on damage
 function getDrop(damage) {
   logger.info(`getDrop called with damage: ${damage}`);
 
-  const maxDropChance = 0.7; // Max drop chance 80%
-  const dropChance = Math.min(damage / 62, maxDropChance);
-  logger.debug(`Calculated dropChance: ${dropChance} (maxDropChance: ${maxDropChance})`);
+  const minDropChance = 0.001; // 최소 1% 확률
+  const maxDropChance = 0.7;  // 최대 70% 확률
+  const minDamage = 10;       // 최소 데미지 값
+  const maxDamage = 50;      // 최대 데미지 값
+
+  // damage가 minDamage에서 maxDamage 사이에 있을 때, dropChance를 선형적으로 계산
+  const dropChance = Math.min(
+    maxDropChance,
+    Math.max(minDropChance, ((damage - minDamage) / (maxDamage - minDamage)) * (maxDropChance - minDropChance) + minDropChance)
+  );
+
+  logger.debug(`Calculated dropChance: ${dropChance} (min: ${minDropChance}, max: ${maxDropChance})`);
 
   const randomChance = parseFloat(Math.random().toFixed(10));  // 소수점 10자리까지 정밀도 높이기
   logger.debug(`Generated random value: ${randomChance}`);
@@ -54,13 +62,12 @@ function getDrop(damage) {
   let totalWeight = 0;
 
   for (const [item, rarity] of Object.entries(dropTable)) {
-    const adjustedWeight = Math.pow(0.4, rarity);
+    const adjustedWeight = Math.pow(0.7, rarity);
     adjustedWeights[item] = parseFloat(adjustedWeight.toFixed(10)); // 소수점 10자리까지 정밀도 유지
     totalWeight += adjustedWeight;
     logger.debug(`Item: ${item}, Rarity: ${rarity}, Adjusted Weight: ${adjustedWeight}`);
   }
 
-  // 총 가중치를 기준으로 정규화
   totalWeight = parseFloat(totalWeight.toFixed(10));
   for (const item in adjustedWeights) {
     adjustedWeights[item] = parseFloat((adjustedWeights[item] / totalWeight).toFixed(10));

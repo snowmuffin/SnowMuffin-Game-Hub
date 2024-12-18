@@ -267,7 +267,7 @@ exports.purchaseItem = asyncHandler(async (req, res) => {
         amount: totalPrice,
         timestamp: new Date().toISOString(),
       });
-      await connection.query('UPDATE user_data SET sek_coin = sek_coin + ? WHERE steam_id = ?', [totalPrice, itemDetails.seller_steam_id]);
+      await connection.query('UPDATE user_data SET sek_coin = sek_coin + ? WHERE steam_id = ?', [totalPrice*0.9, itemDetails.seller_steam_id]);
       logger.info(`Seller balance updated`, {
         sellerSteamId: itemDetails.seller_steam_id,
         addedAmount: totalPrice,
@@ -377,12 +377,10 @@ exports.registerItem = asyncHandler(async (req, res) => {
     const sellerNickname = userResult[0].nickname;
 
     // 온라인 스토리지에서 아이템 수량 확인
-    const [storageResult] = await db.pool.promise().query(
-      'SELECT ? FROM online_storage WHERE steam_id = ?',
-      [itemName,sellerSteamId]
-    );
+    const query = `SELECT \`${itemName}\` FROM online_storage WHERE steam_id = ?`;
+    const [rows] = await db.pool.promise().query(query, [sellerSteamId]);
 
-    if (storageResult.length === 0 || storageResult[0].quantity < quantity) {
+    if (rows.length === 0 || rows < quantity) {
       logger.warn(`Item registration failed: Insufficient quantity in storage`, {
         sellerSteamId,
         itemName,

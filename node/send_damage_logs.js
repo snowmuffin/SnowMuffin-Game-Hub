@@ -6,7 +6,7 @@ const axios = require('axios');
 const SERVER_URL = 'http://localhost:3000/api/damage_logs'; // 환경 변수로 설정 가능
 
 // 반복 횟수 및 지연 시간 설정
-const NUM_REQUESTS = 100000; // 보낼 요청의 총 개수
+const NUM_REQUESTS = 10000; // 보낼 요청의 총 개수
 const BATCH_SIZE = 100; // 동시에 보낼 요청 개수
 
 // 데미지 로그 데이터 생성 함수
@@ -25,7 +25,7 @@ async function sendDamageLogs() {
     const batchRequests = [];
 
     for (let j = 0; j < BATCH_SIZE && i + j < NUM_REQUESTS; j++) {
-      const damage = Math.floor(Math.random() * 100); // 0~99 사이의 랜덤 데미지
+      const damage = Math.floor(Math.random() * 50); // 0~99 사이의 랜덤 데미지
       const damageLog = generateDamageLog(steam_id, damage);
 
       const request = axios.post(SERVER_URL, [damageLog], {
