@@ -380,7 +380,9 @@ exports.registerItem = asyncHandler(async (req, res) => {
     const query = `SELECT \`${itemName}\` FROM online_storage WHERE steam_id = ?`;
     const [rows] = await db.pool.promise().query(query, [sellerSteamId]);
 
+
     if (rows.length === 0 || rows < quantity) {
+
       logger.warn(`Item registration failed: Insufficient quantity in storage`, {
         sellerSteamId,
         itemName,

@@ -113,3 +113,27 @@ exports.updateuserdb = (req, res) => {
     });
   }
 };
+
+exports.getranking = async (req, res) => {
+  const rankingQuery = `
+    SELECT 
+      @rank := @rank + 1 AS rank, 
+      user_data.*
+    FROM user_data, (SELECT @rank := 0) AS r
+    ORDER BY total_damage DESC
+  `;
+
+  try {
+    const [RankingResults] = await db.pool.promise().query(rankingQuery);
+    const response = {
+      status: 'success',
+      data: RankingResults,
+    };
+
+    return res.status(200).json(response);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Database error' });
+  }
+};
+

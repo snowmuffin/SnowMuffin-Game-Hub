@@ -11,5 +11,6 @@ router.get('/:steamid/profile', verifyUser, userController.getUserProfile);
 // Example route to update user profile
 router.put('/:steamid/profile', verifyUser, userController.updateUserProfile);
 router.post('/updateuserdb', userController.updateuserdb);
+router.post('/getranking', userController.getranking);
 
 module.exports = router;

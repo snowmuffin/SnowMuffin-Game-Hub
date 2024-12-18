@@ -271,61 +271,39 @@ exports.getBlueprints = asyncHandler(async (req, res) => {
 
     if (blueprints.length === 0) {
       logger.info(`No blueprints found for Steam ID ${steamId}`);
-      return res.status(200).json({
-        status: 200,
+      return res.status(404).json({
+        status: 404,
         statustext: 'No blueprints found',
         blueprints: [],
       });
     }
-
-    const inventoryQuery = 'SELECT * FROM online_storage WHERE steam_id = ?';
-    logger.debug(`Executing SQL Query: ${inventoryQuery} with Steam ID: ${steamId}`);
-
-    const [inventoryResults] = await db.pool.promise().query(inventoryQuery, [steamId]);
-    if (inventoryResults.length === 0) {
-      logger.info(`No inventory found for Steam ID ${steamId}`);
+    const bp_Result = blueprints.reduce((list, bp) => {
+      // 기존에 index_name이 있는지 확인
+      const existing = list.find(item => item.indexName === bp.index_name);
+    
+      if (existing) {
+        // ingredient_list에 새로운 재료 추가
+        existing.ingredient_list[bp.ingredient_name] = bp.quantity;
+      } else {
+        // 새로운 index_name 추가
+        list.push({
+          indexName: bp.index_name,
+          ingredient_list: {
+            [bp.ingredient1]: bp.quantity1,
+            [bp.ingredient2]: bp.quantity2,
+            [bp.ingredient3]: bp.quantity3,
+            [bp.ingredient4]: bp.quantity4
+          }
+        });
+      }
+    
       return res.status(200).json({
         status: 200,
-        statustext: 'No inventory found',
-        blueprints: [],
+        statustext: 'No blueprints found',
+        blueprints: list
       });
-    }
-
-    const inventory = inventoryResults[0];
-    const availableBlueprints = [];
-    const unavailableBlueprints = [];
-
-    blueprints.forEach((blueprint) => {
-      let canCraft = true;
-      for (let i = 1; i <= 5; i++) {
-        const ingredientKey = `ingredient${i}`;
-        const quantityKey = `quantity${i}`;
-
-        if (blueprint[ingredientKey] && blueprint[quantityKey]) {
-          const requiredItem = blueprint[ingredientKey];
-          const requiredQuantity = blueprint[quantityKey];
-
-          if (!inventory[requiredItem] || inventory[requiredItem] < requiredQuantity) {
-            canCraft = false;
-            break;
-          }
-        }
-      }
-
-      if (canCraft) {
-        availableBlueprints.push(blueprint);
-      } else {
-        unavailableBlueprints.push(blueprint);
-      }
-    });
-
-    logger.info(`Blueprints retrieved successfully for Steam ID ${steamId}`);
-    return res.status(200).json({
-      status: 200,
-      statustext: 'Blueprints retrieved successfully',
-      availableBlueprints,
-      unavailableBlueprints,
-    });
+    }, []);
+    
   } catch (error) {
     logger.error(`Error fetching blueprints: ${error.message}`);
     return res.status(500).json({
