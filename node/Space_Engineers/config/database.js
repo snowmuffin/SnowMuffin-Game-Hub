@@ -202,6 +202,8 @@ const insertItemsInfo = `
     ('ingot_gold', 'Gold Ingot', 'ingot', 'ingot_gold_description', 0),
     ('ingot_platinum', 'Platinum Ingot', 'ingot', 'ingot_platinum_description', 0),
     ('ingot_uranium', 'Uranium Ingot', 'ingot', 'ingot_uranium_description', 0),
+    ('ingot_cerium', 'Cerium Ingot', 'ingot', 'ingot_cerium_description', 0),
+    ('ingot_lanthanum', 'Lanthanum Ingot', 'ingot', 'ingot_lanthanum_description', 0),
     ('Prime_Matter', 'Prime Matter', 'misc', 'prime_matter_description', 0)
     ON DUPLICATE KEY UPDATE
       display_name = VALUES(display_name),

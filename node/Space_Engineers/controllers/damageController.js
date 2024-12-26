@@ -17,14 +17,14 @@ exports.postDamageLogs = async (req, res) => {
 
   try {
     await Promise.all(damageLogs.map(log => {
-      let { steam_id, damage } = log;
+      let { steam_id, damage,server_id } = log;
 
       if (!steam_id || damage === undefined) {
         logger.warn(`Invalid log data: ${JSON.stringify(log)}`);
         return Promise.resolve();
       }
 
-      if (typeof steam_id !== 'string' || !/^\d+$/.test(steam_id)) {
+      if (typeof steam_id !== 'string' || !/^\d+$/.test(steam_id) || typeof server_id !== 'string') {
         logger.warn(`Invalid steam_id format: ${steam_id}`);
         return Promise.resolve();
       }
@@ -33,9 +33,30 @@ exports.postDamageLogs = async (req, res) => {
         logger.warn(`Invalid damage value: ${damage}`);
         return Promise.resolve();
       }
-
+      
+      switch (server_id){
+        case 'S':
+          maxrairty=21;
+          mult=0.7;
+          break;
+        case 'A':
+          maxrairty=17;
+          mult=0.6;
+          break;
+        case 'B':
+          maxrairty=14;
+          mult=0.5;
+          break;
+        case 'C':
+          maxrairty=10;
+          mult=0.4;
+          break;
+        default:
+          maxrairty=4;
+      }
       steam_id = steam_id.toString();
-      const droppedItem = getDrop(damage);
+      
+      const droppedItem = getDrop(damage,mult,maxrairty);
       logger.info(`Dropped item for Steam ID ${steam_id}: ${droppedItem}`);
 
       const damage_event = `

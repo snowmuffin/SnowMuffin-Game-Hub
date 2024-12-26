@@ -29,10 +29,10 @@ const dropTable = {
   FortressModule_Level7: 17, FortressModule_Level8: 18, FortressModule_Level9: 19,
   FortressModule_Level10: 20,
   Prime_Matter: 3,prototech_scrap:3,
-  dummy: 1 // Removed duplicate entries
-};
+  ingot_cerium: 4,ingot_lanthanum:4,ingot_uranium:3,ingot_platinum:3,ingot_gold:2,ingot_silver:2
+}
 
-function getDrop(damage) {
+function getDrop(damage,mult,maxrarity) {
   logger.info(`getDrop called with damage: ${damage}`);
 
   const minDropChance = 0.001; // 최소 1% 확률
@@ -62,7 +62,11 @@ function getDrop(damage) {
   let totalWeight = 0;
 
   for (const [item, rarity] of Object.entries(dropTable)) {
-    const adjustedWeight = Math.pow(0.7, rarity);
+    if(rarity > maxrarity)
+    {
+      continue;
+    }
+    const adjustedWeight = Math.pow(mult, rarity);
     adjustedWeights[item] = parseFloat(adjustedWeight.toFixed(10)); // 소수점 10자리까지 정밀도 유지
     totalWeight += adjustedWeight;
     logger.debug(`Item: ${item}, Rarity: ${rarity}, Adjusted Weight: ${adjustedWeight}`);

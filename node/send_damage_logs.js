@@ -13,7 +13,8 @@ const BATCH_SIZE = 100; // 동시에 보낼 요청 개수
 function generateDamageLog(steam_id, damage) {
   return {
     steam_id: steam_id.toString(),
-    damage: damage
+    damage: damage,
+    server_id: 'A'
   };
 }
 
