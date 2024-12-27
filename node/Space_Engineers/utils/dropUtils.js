@@ -33,7 +33,7 @@ const dropTable = {
 }
 
 function getDrop(damage,mult,maxrarity) {
-  logger.info(`getDrop called with damage: ${damage}`);
+  logger.info(`getDrop called with damage: ${damage,mult,maxrarity}`);
 
   const minDropChance = 0.001; // 최소 1% 확률
   const maxDropChance = 0.7;  // 최대 70% 확률
