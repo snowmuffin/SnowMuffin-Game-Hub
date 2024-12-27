@@ -33,7 +33,8 @@ exports.postDamageLogs = async (req, res) => {
         logger.warn(`Invalid damage value: ${damage}`);
         return Promise.resolve();
       }
-      
+      damage = Math.min(Math.max(damage, 0), 50);
+
       switch (server_id){
         case 'S':
           maxrairty=21;
@@ -76,7 +77,7 @@ exports.postDamageLogs = async (req, res) => {
         `;
       }
 
-      const sekCoinToAdd = damage / 10;
+      const sekCoinToAdd = damage *mult;
 
       return new Promise((resolve, reject) => {
         db.pool.query(damage_event, [steam_id, damage, sekCoinToAdd], (err) => {
