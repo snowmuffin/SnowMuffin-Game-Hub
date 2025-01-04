@@ -14,7 +14,7 @@ function generateDamageLog(steam_id, damage) {
   return {
     steam_id: steam_id.toString(),
     damage: damage,
-    server_id: 'A'
+    server_id: 'C'
   };
 }
 
@@ -26,7 +26,7 @@ async function sendDamageLogs() {
     const batchRequests = [];
 
     for (let j = 0; j < BATCH_SIZE && i + j < NUM_REQUESTS; j++) {
-      const damage = Math.floor(Math.random() * 50); // 0~99 사이의 랜덤 데미지
+      const damage = 49; // 0~99 사이의 랜덤 데미지
       const damageLog = generateDamageLog(steam_id, damage);
 
       const request = axios.post(SERVER_URL, [damageLog], {
