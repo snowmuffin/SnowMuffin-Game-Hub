@@ -204,7 +204,11 @@ const insertItemsInfo = `
     ('ingot_uranium', 'Uranium Ingot', 'ingot', 'ingot_uranium_description', 0),
     ('ingot_cerium', 'Cerium Ingot', 'ingot', 'ingot_cerium_description', 0),
     ('ingot_lanthanum', 'Lanthanum Ingot', 'ingot', 'ingot_lanthanum_description', 0),
-    ('Prime_Matter', 'Prime Matter', 'misc', 'prime_matter_description', 0)
+    ('Prime_Matter', 'Prime Matter', 'misc', 'prime_matter_description', 0),
+    ('AWEFrame', 'AWE Frame', 'component', 'AWEFrame_description', 0),
+    ('MWIFrame', 'MWI Frame', 'component', 'MWIFrame_description', 0),
+    ('40KFrame', '40K Frame', 'component', '40KFrame_description', 0),
+    ('OPC_SecretTech', 'OPC SecretTech', 'component', 'OPC_SecretTech_description', 0)
     ON DUPLICATE KEY UPDATE
       display_name = VALUES(display_name),
       category = VALUES(category),
@@ -261,22 +265,57 @@ function createOnlineStorageTableFromItemsInfo() {
       return;
     }
 
-    // Create columns based on items_info entries
-    let columns = results.map((row) => `${row.index_name} FLOAT DEFAULT 0`).join(', ');
-    const createOnlineStorageTable = `
-      CREATE TABLE IF NOT EXISTS online_storage (
-        steam_id BIGINT NOT NULL,
-        ${columns},
-        PRIMARY KEY (steam_id)
-      );
-    `;
-
-    pool.query(createOnlineStorageTable, (err) => {
-      if (err) {
-        logger.error(`Error creating online_storage table from items_info: ${err.message}`);
+    pool.query('SHOW COLUMNS FROM online_storage', (err, existingColumns) => {
+      if (err && err.code !== 'ER_NO_SUCH_TABLE') { // 테이블이 없을 경우
+        logger.error(`Error fetching online_storage columns: ${err.message}`);
         return;
       }
-      logger.info('online_storage table has been verified or successfully created based on items_info.');
+
+      let existingColumnNames = existingColumns ? existingColumns.map(col => col.Field) : [];
+      if (!existingColumns) {
+        existingColumnNames = [];
+      }
+
+      const newItems = results
+        .map(row => row.index_name)
+        .filter(indexName => !existingColumnNames.includes(indexName));
+
+      if (existingColumnNames.length === 0) {
+        // 테이블이 존재하지 않으므로 생성
+        let columns = results.map((row) => `${row.index_name} FLOAT DEFAULT 0`).join(', ');
+        const createOnlineStorageTable = `
+          CREATE TABLE online_storage (
+            steam_id BIGINT NOT NULL,
+            ${columns},
+            PRIMARY KEY (steam_id)
+          );
+        `;
+
+        pool.query(createOnlineStorageTable, (err) => {
+          if (err) {
+            logger.error(`Error creating online_storage table from items_info: ${err.message}`);
+            return;
+          }
+          logger.info('online_storage table has been successfully created based on items_info.');
+        });
+      } else if (newItems.length > 0) {
+        // 기존 테이블에 새로운 열 추가
+        const alterTableQueries = newItems.map(col => `ADD COLUMN \`${col}\` FLOAT DEFAULT 0`).join(', ');
+        const alterTable = `
+          ALTER TABLE online_storage
+          ${alterTableQueries};
+        `;
+
+        pool.query(alterTable, (err) => {
+          if (err) {
+            logger.error(`Error altering online_storage table: ${err.message}`);
+            return;
+          }
+          logger.info('New columns added to online_storage based on items_info.');
+        });
+      } else {
+        logger.info('No new columns to add to online_storage.');
+      }
     });
   });
 }
