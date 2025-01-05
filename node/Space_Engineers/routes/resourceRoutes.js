@@ -9,4 +9,7 @@ router.post('/download',resourceController.download);
 router.post('/upload',resourceController.upload);
 router.post('/upgrade', authenticateToken, resourceController.upgrade);
 router.post('/getBlueprints', authenticateToken, resourceController.getBlueprints);
+router.post('/gacha/pull',authenticateToken, resourceController.pullGacha);
+router.post('/gacha/pull/multiple',authenticateToken, resourceController.pullMultipleGacha);
+
 module.exports = router;

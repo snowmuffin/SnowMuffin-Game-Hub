@@ -4,3 +4,4 @@
 nginx/nginx.conf
 *.log
 /node/node_modules
+/node/Space_Engineers/node_modules

@@ -1,11 +1,26 @@
+// controller.js
+
 const db = require('../config/database');
 const logger = require('../utils/logger');
+const gacha = require('../utils/gacha'); // 가챠 유틸리티 모듈 불러오기
 
 // Helper function to handle async errors
 const asyncHandler = fn => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
+// 애플리케이션 시작 시 가챠 시스템 초기화
+(async () => {
+  try {
+    await gacha.initializeGacha();
+    logger.info('Gacha system initialized successfully.');
+  } catch (err) {
+    logger.error(`Failed to initialize gacha system: ${err.message}`);
+    process.exit(1); // 초기화 실패 시 애플리케이션 종료
+  }
+})();
+
+// 기존 엔드포인트 유지...
 exports.getResources = asyncHandler(async (req, res) => {
   const steamId = req.user.steamId;
   logger.info(`Received request for resources. Steam ID: ${steamId}`);
@@ -277,33 +292,44 @@ exports.getBlueprints = asyncHandler(async (req, res) => {
         blueprints: [],
       });
     }
+
+    // Blueprint 데이터 구조화
     const bp_Result = blueprints.reduce((list, bp) => {
       // 기존에 index_name이 있는지 확인
       const existing = list.find(item => item.indexName === bp.index_name);
-    
+
       if (existing) {
         // ingredient_list에 새로운 재료 추가
-        existing.ingredient_list[bp.ingredient_name] = bp.quantity;
+        if (bp.ingredient_name) {
+          existing.ingredient_list[bp.ingredient_name] = bp.quantity;
+        }
       } else {
         // 새로운 index_name 추가
+        const ingredients = {};
+        for (let i = 1; i <= 5; i++) {
+          const ingredient = bp[`ingredient${i}`];
+          const quantity = bp[`quantity${i}`];
+          if (ingredient) {
+            ingredients[ingredient] = quantity;
+          }
+        }
+
         list.push({
           indexName: bp.index_name,
-          ingredient_list: {
-            [bp.ingredient1]: bp.quantity1,
-            [bp.ingredient2]: bp.quantity2,
-            [bp.ingredient3]: bp.quantity3,
-            [bp.ingredient4]: bp.quantity4
-          }
+          ingredient_list: ingredients
         });
       }
-    
-      return res.status(200).json({
-        status: 200,
-        statustext: 'No blueprints found',
-        blueprints: list
-      });
+
+      return list;
     }, []);
-    
+
+    logger.info(`Blueprints retrieved for Steam ID ${steamId}: ${JSON.stringify(bp_Result)}`);
+    return res.status(200).json({
+      status: 200,
+      statustext: 'Blueprints retrieved successfully',
+      blueprints: bp_Result
+    });
+
   } catch (error) {
     logger.error(`Error fetching blueprints: ${error.message}`);
     return res.status(500).json({
@@ -311,5 +337,153 @@ exports.getBlueprints = asyncHandler(async (req, res) => {
       statustext: 'Internal server error',
       data: null,
     });
+  }
+});
+
+// 새로운 가챠 엔드포인트 핸들러
+exports.pullGacha = asyncHandler(async (req, res) => {
+  const steamId = req.user.steamId;
+  logger.info(`Gacha pull requested by Steam ID: ${steamId}`);
+
+  const connection = await db.pool.promise().getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Step 1: Check user's sek_coin balance
+    const coinQuery = 'SELECT sek_coin FROM user_data WHERE steam_id = ? FOR UPDATE';
+    const [coinResults] = await connection.query(coinQuery, [steamId]);
+
+    if (coinResults.length === 0) {
+      throw new Error('User not found');
+    }
+
+    const currentSekCoin = coinResults[0].sek_coin;
+
+    if (currentSekCoin < 500) {
+      await connection.rollback();
+      return res.status(400).json({
+        status: 400,
+        statustext: 'Insufficient sek_coin',
+        message: 'You do not have enough sek_coin to perform a gacha pull.',
+      });
+    }
+
+    // Step 2: Deduct 500 sek_coin
+    const deductQuery = 'UPDATE user_data SET sek_coin = sek_coin - 500 WHERE steam_id = ?';
+    await connection.query(deductQuery, [steamId]);
+
+    // Step 3: Perform gacha pull
+    const droppedItem = gacha.pullGacha();
+    logger.info(`Dropped item for Steam ID ${steamId}: ${JSON.stringify(droppedItem)}`);
+
+    const { index_name, rarity } = droppedItem;
+
+    // Step 4: Update online_storage table
+    const insertQuery = `
+      INSERT INTO online_storage (steam_id, ${index_name})
+      VALUES (?, 1)
+      ON DUPLICATE KEY UPDATE ${index_name} = ${index_name} + 1
+    `;
+    await connection.query(insertQuery, [steamId]);
+
+    await connection.commit();
+
+    return res.status(200).json({
+      status: 200,
+      statustext: 'Gacha pull successful',
+      item: {
+        indexName: index_name,
+        rarity: rarity,
+        quantity: 1
+      }
+    });
+  } catch (err) {
+    await connection.rollback();
+    logger.error(`Error during gacha pull for Steam ID ${steamId}: ${err.message}`);
+    return res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    connection.release();
+  }
+});
+
+// 여러 번 가챠를 실행하는 엔드포인트 핸들러 (선택 사항)
+exports.pullMultipleGacha = asyncHandler(async (req, res) => {
+  const steamId = req.user.steamId;
+  const { count } = req.body;
+  const gachaCount = parseInt(count, 10) || 1;
+
+  if (gachaCount <= 0) {
+    return res.status(400).json({ error: 'Invalid gacha count' });
+  }
+
+  logger.info(`Multiple gacha pull requested by Steam ID: ${steamId}, Count: ${gachaCount}`);
+
+  const connection = await db.pool.promise().getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Step 1: Check user's sek_coin balance
+    const coinQuery = 'SELECT sek_coin FROM user_data WHERE steam_id = ? FOR UPDATE';
+    const [coinResults] = await connection.query(coinQuery, [steamId]);
+
+    if (coinResults.length === 0) {
+      throw new Error('User not found');
+    }
+
+    const currentSekCoin = coinResults[0].sek_coin;
+    const totalDeduction = 500 * gachaCount;
+
+    if (currentSekCoin < totalDeduction) {
+      await connection.rollback();
+      return res.status(400).json({
+        status: 400,
+        statustext: 'Insufficient sek_coin',
+        message: `You do not have enough sek_coin to perform ${gachaCount} gacha pulls. Required: ${totalDeduction}, Available: ${currentSekCoin}`,
+      });
+    }
+
+    // Step 2: Deduct total sek_coin
+    const deductQuery = 'UPDATE user_data SET sek_coin = sek_coin - ? WHERE steam_id = ?';
+    await connection.query(deductQuery, [totalDeduction, steamId]);
+
+    // Step 3: Perform multiple gacha pulls
+    const droppedItems = [];
+    const insertQueries = [];
+
+    for (let i = 0; i < gachaCount; i++) {
+      const droppedItem = gacha.pullGacha();
+      droppedItems.push(droppedItem);
+
+      const { index_name, rarity } = droppedItem;
+
+      // Prepare insert queries
+      const insertQuery = `
+        INSERT INTO online_storage (steam_id, ${index_name})
+        VALUES (?, 1)
+        ON DUPLICATE KEY UPDATE ${index_name} = ${index_name} + 1
+      `;
+      insertQueries.push(connection.query(insertQuery, [steamId]));
+    }
+
+    // Execute all insert queries in parallel
+    await Promise.all(insertQueries);
+
+    await connection.commit();
+
+    return res.status(200).json({
+      status: 200,
+      statustext: 'Multiple gacha pulls successful',
+      items: droppedItems.map(item => ({
+        indexName: item.index_name,
+        rarity: item.rarity,
+        quantity: 1
+      }))
+    });
+  } catch (err) {
+    await connection.rollback();
+    logger.error(`Error during multiple gacha pulls for Steam ID ${steamId}: ${err.message}`);
+    return res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    connection.release();
   }
 });
